@@ -1,0 +1,46 @@
+.uk-grid+.uk-grid, .uk-grid-margin, .uk-grid>*>.uk-panel+.uk-panel {
+	margin-top: 10px;
+}
+
+
+#app {
+	display: -webkit-box;
+	display: -webkit-flex;
+	display: -ms-flexbox;
+	display: flex;
+}
+
+#left-nav {
+	background: #000000;
+	height: 100vh;
+	width: 35px;
+}
+
+#left-nav a {
+	color: #ffffff;
+	padding: 10px;
+}
+
+#left-nav a.active {
+	color: #3498db;
+}
+
+#main {
+	flex-grow: 1;
+	padding: 20px;
+}
+
+#main h1 {
+	font-size: 18px;
+	line-height: 18px;
+	display: inline-block;
+	margin-right: 10px;
+}
+
+a.add {
+	color: #2ecc71;
+}
+
+a.remove {
+	color: #e74c3c;
+}
