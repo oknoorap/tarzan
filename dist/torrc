@@ -1,0 +1,6 @@
+ControlPort 9051
+HashedControlPassword 16:59A0181DC2EDDF9B60CA7DF5D6FBD47FFC20A970B52A1BF66B2735039D
+CookieAuthentication 1
+GeoIPFile geoip
+GeoIPv6File geoip6
+Support022HiddenServices 1
