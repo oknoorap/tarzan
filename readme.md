@@ -9,6 +9,6 @@ Awwwwoooo, It's my personal project to scraping themef****t.net via tor. We're w
 ## Build
 Run ```build.sh``` and you'll got 3 binaries:
 
-- ```api``` will run API server on port 8080, with endpoints url ```/api/v1```
+- ```api``` will run API server on port 8080 (admin and visualization), with endpoints url ```/api/v1```
 - ```worker``` will always run and retrieve task from redis via ```RPUSH```
-- ```scheduler``` will crawling category/subcategory page via API, where we can manage it via web API, it's like cronjob
+- ```scheduler``` will crawling category/subcategory page from API, it's like cronjob
