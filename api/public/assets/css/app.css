@@ -32,9 +32,10 @@
 
 #main h1 {
 	font-size: 18px;
-	line-height: 18px;
+	line-height: 30px;
 	display: inline-block;
 	margin-right: 10px;
+	margin-bottom: 0;
 }
 
 a.add {
@@ -43,4 +44,18 @@ a.add {
 
 a.remove {
 	color: #e74c3c;
+}
+
+a.url {
+	font-size: 13px;
+	color: #66A1FB;
+}
+
+hr {
+	margin: 10px 0 20px;
+    border-color: #F1F1F1;
+}
+
+.uk-form.uk-form-horizontal {
+	margin-top: 20px;
 }
