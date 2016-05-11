@@ -30,6 +30,7 @@ func main () {
 
 	// Items
 	e.GET(apiVersion + "/item/:id", api.ItemGet)
+	e.PUT(apiVersion + "/item/:id", api.ItemUpdate)
 
 	// Settings
 	e.PUT(apiVersion + "/setting/:key", api.SettingSet)

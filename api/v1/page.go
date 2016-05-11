@@ -9,21 +9,6 @@ import (
 	"log"
 )
 
-
-type (
-	Error struct {
-		Error bool `json:"error"`
-		Message string `json:"message"`
-	}
-
-	Page struct {
-		Id bson.ObjectId `json:"id" bson:"_id,omitempty"`
-		Url string `json:"url"`
-		Title string `json:"title"`
-		Desc string `json:"desc"`
-	}
-)
-
 // Create new page
 func PageNew (c echo.Context) error {
 

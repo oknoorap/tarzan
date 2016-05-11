@@ -45,6 +45,9 @@ func GetItem (queue string, args ...interface{}) error {
 		"title": "",
 		"sales": 0,
 		"created": "",
+		"author": "",
+		"category": "",
+		"url": "",
 		"tags": []string{},
 	}
 
@@ -82,49 +85,65 @@ func GetItem (queue string, args ...interface{}) error {
 	})
 	data["tags"] = tags
 
-	
-	// Connect to database
-	db, err := connectDb()
-	if err != nil {
-		log.Fatalf("Error: %s\n", err)
-	} else {
+	// Author
+	author := doc.Find(`a[rel="author"]`).Text()
+	data["author"] = strings.Trim(author, " ")
 
-		// Set Mgo Session
-		db.SetMode(mgo.Monotonic, true)
-		dbSession := db.Copy()
-		defer dbSession.Close()
+	// Category
+	category := doc.Find(`a[itemprop="genre"]`).Text()
+	data["category"] = strings.Trim(category, " ")
 
-		// Pick MongoDB collection
-		collection := dbSession.DB("tarzan").C("item")
 
-		// MongoDB data
-		now := int32(time.Now().Unix())
-		fields := bson.M{
-			"$set": bson.M{
-				"item_id": data["item_id"],
-				"title": data["title"],
-				"created": data["created"],
-				"time": now,
-			},
+	if data["item_id"] != "" {
 
-			"$push": bson.M{
-				"tags": bson.M{"$each": tags},
-				"sales": bson.M{
-					"date": now,
-					"value": data["sales"],
-				},
-			},
-		}
-
-		// Upsert `page` collection
-		_, err := collection.Upsert(bson.M{"item_id": item_id}, fields)
+		// Connect to database
+		db, err := connectDb()
 		if err != nil {
-			log.Println("Error:", err)
+			log.Fatalf("Error: %s\n", err)
 		} else {
-			if data["item_id"] != 0 {
-				log.Println("Done, ItemId: ", data["item_id"])
+
+			// Set Mgo Session
+			db.SetMode(mgo.Monotonic, true)
+			dbSession := db.Copy()
+			defer dbSession.Close()
+
+			// Pick MongoDB collection
+			collection := dbSession.DB("tarzan").C("item")
+
+			// MongoDB data
+			now := int32(time.Now().Unix())
+			fields := bson.M{
+				"$set": bson.M{
+					"item_id": data["item_id"],
+					"title": data["title"],
+					"created": data["created"],
+					"author": data["author"],
+					"category": data["category"],
+					"url": uri,
+					"time": now,
+				},
+
+				"$push": bson.M{
+					"tags": bson.M{"$each": tags},
+					"sales": bson.M{
+						"date": now,
+						"value": data["sales"],
+					},
+				},
+			}
+
+			// Upsert `page` collection
+			_, err := collection.Upsert(bson.M{"item_id": item_id}, fields)
+			if err != nil {
+				log.Println("Error:", err)
+			} else {
+				if data["item_id"] != 0 {
+					log.Println("Done, ItemId: ", data["item_id"])
+				}
 			}
 		}
+	} else {
+		log.Println("Item ID not found")
 	}
 
 	return nil
