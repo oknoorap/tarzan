@@ -44,6 +44,7 @@ func GetItem (queue string, args ...interface{}) error {
 		"item_id": 0,
 		"title": "",
 		"sales": 0,
+		"price": 0,
 		"created": "",
 		"author": "",
 		"category": "",
@@ -94,7 +95,7 @@ func GetItem (queue string, args ...interface{}) error {
 	data["category"] = strings.Trim(category, " ")
 
 
-	if data["item_id"] != "" {
+	if data["author"] != "" {
 
 		// Connect to database
 		db, err := connectDb()
@@ -143,7 +144,19 @@ func GetItem (queue string, args ...interface{}) error {
 			}
 		}
 	} else {
+		// Connect redis
+		redis, err := dialRedis()
+		if err != nil {
+			log.Println(err)
+		}
+
+		rpush := redis.RPush("resque:queue:" + queue, `{"class":"GetItem","args":[{"url":"`+ uri +`"}]}`).Err()
+		if rpush != nil {
+			log.Println(rpush)
+		}
+
 		log.Println("Item ID not found")
+		return nil
 	}
 
 	return nil
