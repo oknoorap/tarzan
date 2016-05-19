@@ -172,14 +172,32 @@
 	:title="(title)? title + ' by ' + author: 'Loading...'"
 	:search-model.sync="search">
 	<div class="uk-grid">
-	<div class="uk-width-3-6">
-		<a href="${url}" target="_blank">Visit URL <i class="uk-icon-external-link"></i></a><br />
-		Date Created: ${created}<br />
-		Category: ${category}<br />
+		<div class="uk-width-1-1">
+			<ul class="uk-subnav uk-subnav-pill uk-flex-center">
+				<li class="uk-active"><a href="#">Today</a></li>
+				<li><a href="#">Last 7 Days</a></li>
+				<li><a href="#">This Month</a></li>
+				<li><a href="#">Last Month</a></li>
+				<li><a href="#">This Year</a></li>
+			</ul>
+		</div>
 	</div>
-	<div class="uk-width-3-6">
-		<div style="white-space: wrap">Tags: <a href="http://themeforest.net/tags/${tag}" class="tag" v-for="tag in tags" target="_blank">${tag}</a></div>
+
+	<div class="uk-grid">
+		<div class="uk-width-1-1">
+			<div id="chart"></div>
+		</div>
 	</div>
+
+	<div class="uk-grid">
+		<div class="uk-width-3-6">
+			<a href="${url}" target="_blank">Visit URL <i class="uk-icon-external-link"></i></a><br />
+			Date Created: ${created}<br />
+			Category: ${category}<br />
+		</div>
+		<div class="uk-width-3-6">
+			<div style="white-space: wrap">Tags: <a href="http://themeforest.net/tags/${tag}" class="tag" v-for="tag in tags" target="_blank">${tag}</a></div>
+		</div>
 	</div>
 </wrapper>
 </script>
@@ -189,6 +207,9 @@
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vue-router/0.7.13/vue-router.js" defer></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/uikit/2.26.3/js/uikit.min.js" defer></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js" defer></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/async/1.5.2/async.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.13.0/moment.min.js"></script>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 <script type="text/javascript" src="assets/js/app.js" defer></script>
 </body>
 </html>

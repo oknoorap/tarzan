@@ -303,6 +303,44 @@ var App = {
 						return response.data
 					})
 				}
+			},
+
+			ready: function () {
+				var self = this, chartData,
+				chartOptions = {
+					hAxis: {title: 'Time'},
+					vAxis: {title: 'Sales'},
+					backgroundColor: '#ffffff'
+				}
+
+
+				// Load google.visualization.DataTable()
+				async.waterfall([
+					function (next) {
+						if (google.visualization) {
+							chartData = new google.visualization.DataTable()
+							next ()
+						} else {
+							google.charts.load('current', {packages: ['corechart', 'line']})
+							google.charts.setOnLoadCallback(function () {
+								chartData = new google.visualization.DataTable()
+								next()
+							})
+						}
+					}
+				], function () {
+					chartData.addColumn('string', 'X')
+					chartData.addColumn('number', 'Sales')
+
+					var sales = []
+					_.each(self.sales, function (item, index) {
+						sales.push([moment.unix(item.date).format("DD MM YYYY"), item.value])
+					})
+					chartData.addRows(sales)
+
+					var chart = new google.visualization.LineChart(document.getElementById('chart'))
+					chart.draw(chartData, chartOptions);
+				})
 			}
 		})
 	},
