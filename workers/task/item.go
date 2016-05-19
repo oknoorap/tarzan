@@ -121,11 +121,11 @@ func GetItem (queue string, args ...interface{}) error {
 					"author": data["author"],
 					"category": data["category"],
 					"url": uri,
+					"tags": tags,
 					"time": now,
 				},
 
 				"$push": bson.M{
-					"tags": bson.M{"$each": tags},
 					"sales": bson.M{
 						"date": now,
 						"value": data["sales"],

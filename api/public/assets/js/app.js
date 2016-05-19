@@ -299,7 +299,7 @@ var App = {
 							return
 						}
 
-						console.log(response)
+						response.data.tags = _.unique(response.data.tags)
 						return response.data
 					})
 				}
