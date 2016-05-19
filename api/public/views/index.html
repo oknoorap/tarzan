@@ -126,12 +126,12 @@
 <script type="text/template" id="item-list">
 <div v-if="waiting">Loading...</div>
 <wrapper v-else icon="bookmark-o"
-	:title="'Item List: '+ ((total)? total: '...') + ' Items'"
+	:title="'Item List: '+ ((total)? total: 0) + ' Items'"
 	:form-search="true"
 	:search-model.sync="search"
 	search-label="Search Item">
 
-	<ul class="uk-pagination">
+	<ul class="uk-pagination" v-if="total>1">
 		<li :class="{'uk-disabled': pagination.current === 0}"><a @click="prevPage($event)"><i class="uk-icon-angle-double-left"></i></a></li>
 		<li v-if="pagination.current > 4"><a @click="getPage(0)">1</a></li>
 		<li v-if="pagination.current > 4"><span>...</span></li>
