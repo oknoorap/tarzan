@@ -29,8 +29,8 @@
 		<h1><i class="uk-icon-${icon}"></i> ${title}</h1>
 		<a class="add" v-link="{path: '/page/add'}" v-if="addButton"><i class="uk-icon-plus"></i></a>
 	</div>
-	<div class="uk-width-2-10" v-if="formSearch">
-		<form class="uk-form">
+	<div class="uk-width-2-10">
+		<form class="uk-form" v-if="formSearch">
 			<input type="search" placeholder="${searchLabel}" v-model="searchModel" class="uk-width-1-1">
 		</form>
 	</div>

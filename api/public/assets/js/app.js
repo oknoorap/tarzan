@@ -332,9 +332,9 @@ var App = {
 					chartData.addColumn('string', 'X')
 					chartData.addColumn('number', 'Sales')
 
-					var sales = []
+					var sales = [], totalSales = _.last(self.sales).value
 					_.each(self.sales, function (item, index) {
-						sales.push([moment.unix(item.date).format("DD MM YYYY"), item.value])
+						sales.push([moment.unix(item.date).format("DD MM YYYY"), totalSales - item.value])
 					})
 					chartData.addRows(sales)
 
