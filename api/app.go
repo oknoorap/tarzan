@@ -25,6 +25,7 @@ func main () {
 
 
 	// Routes 
+
 	// Page
 	e.POST(apiVersion + "/page", api.PageNew)
 	e.GET(apiVersion + "/page/:id", api.PageGet)
@@ -35,14 +36,27 @@ func main () {
 	e.GET(apiVersion + "/item/:id", api.ItemGet)
 	e.PUT(apiVersion + "/item/:id", api.ItemUpdate)
 
-	// Settings
-	e.PUT(apiVersion + "/setting/:key", api.SettingSet)
-	e.GET(apiVersion + "/setting/:key", api.SettingGet)
+	// Subscribe
+	e.POST(apiVersion + "/subscribe", api.Subscribe)
+	e.POST(apiVersion + "/unsubscribe", api.Unsubscribe)
+	e.POST(apiVersion + "/subscribe/group", api.GroupNew)
+	e.GET(apiVersion + "/subscribe/group/:id", api.GroupGet)
+	e.PUT(apiVersion + "/subscribe/group/:id", api.GroupUpdate)
+	e.DELETE(apiVersion + "/subscribe/group/:id", api.GroupDelete)
 
 	// List
 	e.GET(apiVersion + "/list/page", api.PageList)
 	e.GET(apiVersion + "/list/item", api.ItemList)
-	e.GET(apiVersion + "/list/setting", api.SettingList)
+	e.GET(apiVersion + "/list/subscribe", api.SubscribeList)
+	e.GET(apiVersion + "/list/subscribe/group", api.GroupList)
+
+	// Dashboard
+	e.GET(apiVersion + "/dashboard/stats/tags", api.Tags)
+	e.GET(apiVersion + "/dashboard/stats/market", api.MarketValue)
+
+	// Misc method
+	e.GET(apiVersion + "/list/category", api.CategoryList)
+	e.POST(apiVersion + "/search", api.Search)
 
 
 	// Configure template engine

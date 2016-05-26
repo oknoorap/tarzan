@@ -4,14 +4,14 @@ import (
 	"github.com/labstack/echo"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	"strconv"
 	"log"
 	"net/http"
+	"encoding/json"
+	"strconv"
+	"reflect"
 )
 
-
-// Get item by given id
-func ItemGet (c echo.Context) error {
+func CategoryList (c echo.Context) error {
 	// Set default response to error
 	defaultResponse := Error{
 		Error: true,
@@ -28,8 +28,6 @@ func ItemGet (c echo.Context) error {
 
 	} else {
 
-		// Get ID
-		id := bson.ObjectIdHex(c.Param("id"))
 
 		// Set Mgo Session
 		db.SetMode(mgo.Monotonic, true)
@@ -40,28 +38,25 @@ func ItemGet (c echo.Context) error {
 		collection := dbSession.DB("tarzan").C("item")
 
 		// Iterate all list
-		var result ItemView
-		err := collection.FindId(id).One(&result)
+		var result []string
+		err := collection.Find(nil).Distinct("category", &result)
 
 		// Send response
 		if err == nil {
 			return c.JSON(http.StatusOK, map[string]interface{}{
 				"status": http.StatusOK,
-				"data": result,
+				"list": result,
 			})
+		} else {
+			defaultResponse.Message = err.Error()
 		}
 	}
 
 	return c.JSON(http.StatusOK, defaultResponse)
 }
 
+func Search (c echo.Context) error {
 
-func ItemUpdate (c echo.Context) error {
-	return c.JSON(http.StatusOK, "")
-}
-
-// Show all items
-func ItemList (c echo.Context) error {
 	// Set default response to error
 	defaultResponse := Error{
 		Error: true,
@@ -77,17 +72,48 @@ func ItemList (c echo.Context) error {
 		defaultResponse.Message = "Can't connect db"
 
 	} else {
-
 		// Set Mgo Session
 		db.SetMode(mgo.Monotonic, true)
 		dbSession := db.Copy()
 		defer dbSession.Close()
 
-		// Pick MongoDB collection
-		collection := dbSession.DB("tarzan").C("item")
+		// Decode search criteria into bson
+		var search bson.M
+		searchParams := c.FormValue("search")
+		if err := json.Unmarshal([]byte(searchParams), &search); err != nil {
+			logPanic(err)
+		}
 
-		// Count all item
-		total, _ := collection.Find(nil).Count()
+		// Convert string to bson.RegEx
+		// And then delete it
+		// Author
+		author := reflect.ValueOf(search["author"])
+		if author.IsValid() {
+			regex := author.MapIndex(reflect.ValueOf("regex")).Elem().String()
+			author.SetMapIndex(reflect.ValueOf("$regex"), reflect.ValueOf(bson.RegEx{regex, "i"}))
+			author.SetMapIndex(reflect.ValueOf("regex"), reflect.Value{})
+		}
+
+		// tags
+		tags := reflect.ValueOf(search["tags"])
+		if tags.IsValid() {
+			regex := tags.MapIndex(reflect.ValueOf("regex")).Elem().String()
+			tags.SetMapIndex(reflect.ValueOf("$regex"), reflect.ValueOf(bson.RegEx{regex, "i"}))
+			tags.SetMapIndex(reflect.ValueOf("regex"), reflect.Value{})
+		}
+
+		// Category
+		category := reflect.ValueOf(search["category"])
+		if category.IsValid() {
+			regex := category.MapIndex(reflect.ValueOf("regex")).Elem().String()
+			category.SetMapIndex(reflect.ValueOf("$regex"), reflect.ValueOf(bson.RegEx{regex, "i"}))
+			category.SetMapIndex(reflect.ValueOf("regex"), reflect.Value{})
+		}
+
+		log.Println(search)
+
+		// Set collection as item
+		collection := dbSession.DB("tarzan").C("item")
 
 		// Get limit, default limit is 100
 		limit := 100
@@ -103,19 +129,27 @@ func ItemList (c echo.Context) error {
 			}
 		}
 
+
+		// Get total of results
+		total, _ := collection.Find(search).Count()
+
 		// Iterate all list
-		iterate := collection.Find(nil).Select(bson.M{
+		find := collection.Find(search).Select(bson.M{
 			"_id": true,
 			"item_id": true,
 			"url": true,
 			"author": true,
 			"title": true,
 			"created": true,
+			"category": true,
 			"subscribed": true,
+			"price": true,
 			"sales": bson.M{"$slice": -1},
-		}).Limit(limit).Sort("-created").Skip(offset).Iter()
-
-		var result []Item
+		}).Limit(limit).Skip(offset)
+		
+		// Get items
+		var result []ItemViewSearch
+		iterate := find.Iter()
 		err := iterate.All(&result)
 
 		// Send response
@@ -125,6 +159,8 @@ func ItemList (c echo.Context) error {
 				"total": total,
 				"list": result,
 			})
+		} else {
+			defaultResponse.Message = err.Error()
 		}
 	}
 

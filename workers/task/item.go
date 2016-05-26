@@ -94,6 +94,16 @@ func GetItem (queue string, args ...interface{}) error {
 	category := doc.Find(`a[itemprop="genre"]`).Text()
 	data["category"] = strings.Trim(category, " ")
 
+	// Get Item price
+	price, price_ok := doc.Find(`meta[itemprop="price"]`).Attr("content")
+	if price_ok {
+		price_float, err := strconv.ParseFloat(price, 64)
+		if err == nil {
+			data["price"] = price_float
+		} else {
+			log.Println(err)
+		}
+	}
 
 	if data["author"] != "" {
 
@@ -120,6 +130,7 @@ func GetItem (queue string, args ...interface{}) error {
 					"created": data["created"],
 					"author": data["author"],
 					"category": data["category"],
+					"price": data["price"],
 					"url": uri,
 					"tags": tags,
 					"time": now,
@@ -144,18 +155,24 @@ func GetItem (queue string, args ...interface{}) error {
 			}
 		}
 	} else {
+		// Wait 10 seconds, after that push existing error task as new task
+		timer := time.NewTimer(time.Second * 10)
+    	<- timer.C
+
 		// Connect redis
 		redis, err := dialRedis()
 		if err != nil {
 			log.Println(err)
 		}
 
+		// Since we're have a connection trouble
+		// Add again to task
 		rpush := redis.RPush("resque:queue:" + queue, `{"class":"GetItem","args":[{"url":"`+ uri +`"}]}`).Err()
 		if rpush != nil {
 			log.Println(rpush)
 		}
 
-		log.Println("Item ID not found")
+		log.Println("Item ID not found, recrawling")
 		return nil
 	}
 

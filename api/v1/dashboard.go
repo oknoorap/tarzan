@@ -4,14 +4,13 @@ import (
 	"github.com/labstack/echo"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	"strconv"
 	"log"
 	"net/http"
 )
 
 
 // Get item by given id
-func ItemGet (c echo.Context) error {
+func MarketValue (c echo.Context) error {
 	// Set default response to error
 	defaultResponse := Error{
 		Error: true,
@@ -28,9 +27,6 @@ func ItemGet (c echo.Context) error {
 
 	} else {
 
-		// Get ID
-		id := bson.ObjectIdHex(c.Param("id"))
-
 		// Set Mgo Session
 		db.SetMode(mgo.Monotonic, true)
 		dbSession := db.Copy()
@@ -40,11 +36,28 @@ func ItemGet (c echo.Context) error {
 		collection := dbSession.DB("tarzan").C("item")
 
 		// Iterate all list
-		var result ItemView
-		err := collection.FindId(id).One(&result)
+		// db.item.aggregate([])
+		aggregate := collection.Pipe([]bson.M{
+			bson.M{
+				"$project": bson.M{
+					"sales": bson.M{
+						"$filter": bson.M{
+							"input": "$sales",
+							"as": "sales",
+							"cond": bson.M{"$gte": []interface{}{"$$sales.date", 1000}},
+						},
+					},
+					"price": 1,
+				},
+			},
+			bson.M{"$limit": 10000},
+		})
+		var result []MarketValueSeries
+		err := aggregate.Iter().All(&result)
 
 		// Send response
 		if err == nil {
+
 			return c.JSON(http.StatusOK, map[string]interface{}{
 				"status": http.StatusOK,
 				"data": result,
@@ -55,13 +68,8 @@ func ItemGet (c echo.Context) error {
 	return c.JSON(http.StatusOK, defaultResponse)
 }
 
-
-func ItemUpdate (c echo.Context) error {
-	return c.JSON(http.StatusOK, "")
-}
-
-// Show all items
-func ItemList (c echo.Context) error {
+// Get item by given id
+func Tags (c echo.Context) error {
 	// Set default response to error
 	defaultResponse := Error{
 		Error: true,
@@ -86,44 +94,26 @@ func ItemList (c echo.Context) error {
 		// Pick MongoDB collection
 		collection := dbSession.DB("tarzan").C("item")
 
-		// Count all item
-		total, _ := collection.Find(nil).Count()
-
-		// Get limit, default limit is 100
-		limit := 100
-		if limit_int, err := strconv.Atoi(c.QueryParam("limit")); err == nil {
-			limit = limit_int
-		}
-
-		// Get parameters, default offset is 0
-		offset := 0
-		if offset_int, err := strconv.Atoi(c.QueryParam("offset")); err == nil {
-			if offset_int > 0 {
-				offset = offset_int * limit
-			}
-		}
-
 		// Iterate all list
-		iterate := collection.Find(nil).Select(bson.M{
-			"_id": true,
-			"item_id": true,
-			"url": true,
-			"author": true,
-			"title": true,
-			"created": true,
-			"subscribed": true,
-			"sales": bson.M{"$slice": -1},
-		}).Limit(limit).Sort("-created").Skip(offset).Iter()
-
-		var result []Item
-		err := iterate.All(&result)
+		aggregate := collection.Pipe([]bson.M{
+			bson.M{ "$unwind": "$tags"},
+			bson.M{
+				"$group": bson.M{
+					"_id": "$tags",
+					"count": bson.M{"$sum": 1},
+				},
+			},
+			bson.M{ "$sort": bson.M{"count": -1}},
+			bson.M{ "$limit": 10},
+		})
+		var result []TagsCount
+		err := aggregate.Iter().All(&result)
 
 		// Send response
 		if err == nil {
 			return c.JSON(http.StatusOK, map[string]interface{}{
 				"status": http.StatusOK,
-				"total": total,
-				"list": result,
+				"data": result,
 			})
 		}
 	}
