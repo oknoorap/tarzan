@@ -27,6 +27,14 @@ func MarketValue (c echo.Context) error {
 
 	} else {
 
+		// Get default limit by date
+		date := c.QueryParam("date")
+		limit := 24
+
+		if date == "week" {
+			limit = 7
+		}
+
 		// Set Mgo Session
 		db.SetMode(mgo.Monotonic, true)
 		dbSession := db.Copy()
@@ -50,7 +58,7 @@ func MarketValue (c echo.Context) error {
 					"price": 1,
 				},
 			},
-			bson.M{"$limit": 10000},
+			bson.M{"$limit": limit},
 		})
 		var result []MarketValueSeries
 		err := aggregate.Iter().All(&result)

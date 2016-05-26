@@ -29,144 +29,145 @@ App.dashboard = Vue.extend({
 	template: '#dashboard',
 	route: {
 		canReuse: false,
-		waitForData: true,
-		data: function () {
-			return 
-			/*.then(function () {
-				return $.getJSON(apiUrl.concat('dashboard/stats/tags'))
-			})
-			.then(function (response) {
-				if (response.error) {
-					alert(response.message)
-					return
-				}
-
-				return {tagStats: response.data}
-			})*/
-
-			return data
-		},
+		waitForData: false
 	},
-	data: {},
-	methods: {},
-	ready: function () {
-		var self = this, canvas = {tagStats: {}, marketValue: {}}
-
+	data: function () {
+		return {canvas: {tagStats: {}, marketValue: {}}}
+	},
+	methods: {
 		/**
-		 * Market value Stats
-		 * @type {Object}
+		 * Get Market Value (All categories) by date
+		 * @param  {string} date
+		 * @return {void}
 		 */
-		canvas.marketValue.context = document.getElementById('market-value').getContext('2d')
-		canvas.marketValue.data = {
-			labels: [],
-			datasets: [{
-				label: "Revenue",
-				fill: true,
-				lineTension: 0.1,
-				backgroundColor: "rgba(26, 188, 156, 0.4)",
-				borderColor: "rgba(26, 188, 156,1.0)",
-				borderCapStyle: 'butt',
-				borderDash: [],
-				borderDashOffset: 0.0,
-				borderJoinStyle: 'miter',
-				pointBorderColor: "rgba(22, 160, 133,1.0)",
-				pointBackgroundColor: "rgba(26, 188, 156,1.0)",
-				pointBorderWidth: 2,
-				pointHoverRadius: 5,
-				pointHoverBackgroundColor: "#ffffff",
-				pointHoverBorderColor: "rgba(22, 160, 133,1.0)",
-				pointHoverBorderWidth: 2,
-				pointRadius: 5,
-				pointHitRadius: 10,
-				data: []
-			}]
-		}
+		getMarketValue: function (date) {
+			var self = this,
+			canvas = self.canvas.marketValue
 
-		$.getJSON(apiUrl.concat('dashboard/stats/market'))
-		.then(function (response) {
-			if (response.error) {
-				alert(response.message)
-				return
+			canvas.context = document.getElementById('market-value').getContext('2d')
+			canvas.data = {
+				labels: [],
+				datasets: [{
+					label: "Revenue",
+					fill: true,
+					lineTension: 0.1,
+					backgroundColor: "rgba(26, 188, 156, 0.4)",
+					borderColor: "rgba(26, 188, 156,1.0)",
+					borderCapStyle: 'butt',
+					borderDash: [],
+					borderDashOffset: 0.0,
+					borderJoinStyle: 'miter',
+					pointBorderColor: "rgba(22, 160, 133,1.0)",
+					pointBackgroundColor: "rgba(26, 188, 156,1.0)",
+					pointBorderWidth: 2,
+					pointHoverRadius: 5,
+					pointHoverBackgroundColor: "#ffffff",
+					pointHoverBorderColor: "rgba(22, 160, 133,1.0)",
+					pointHoverBorderWidth: 2,
+					pointRadius: 5,
+					pointHitRadius: 10,
+					data: []
+				}]
 			}
 
-			var data = response.data.filter(function (item) {
-				return item.sales !== undefined && item.price !== undefined && item.sales !== null && item.price > 0
-			})
+			$.getJSON(apiUrl.concat('dashboard/stats/market?date=', date)).then(function (response) {
+				if (response.error) { alert(response.message); return }
 
-			var marketValue = {}
-			_.each(data, function (item) {
-				var itemSales = {}
+				var data,
+				marketValue = {},
+				dateFormat = "DD/MM/YYYY H:mm A"
 
-				_.each(item.sales, function (sales) {
-					var date = moment.unix(sales.date).format("DD/MM/YYYY")
-					if (!itemSales[date]) itemSales[date] = sales.value
+				data = response.data.filter(function (item) {
+					return item.sales !== undefined && item.price !== undefined && item.sales !== null && item.price > 0
 				})
 
-				_.each(itemSales, function (sales, date) {
-					if (!marketValue[date]) marketValue[date] = {sales: 0, price: 0}
-					marketValue[date].sales += sales
-					marketValue[date].price += item.price
+				// Get item sales by individual item
+				// Then sum with all items
+				_.each(data, function (item) {
+
+					// Get the same time of document,
+					// Prevent duplicate unixtime of timeline when scraping
+					_.each(item.sales, function (sales, index) {
+						var date = moment.unix(sales.date).format(dateFormat), salesValue = sales.value
+
+    					if (index > 0) salesValue = salesValue - item.sales[index - 1].value
+						if (!marketValue[date]) marketValue[date] = {sales: 0, price: 0}
+						marketValue[date].sales += parseInt(salesValue)
+						marketValue[date].price += parseInt(item.price)
+					})
+				})
+
+
+				// Ordering by timeline
+				var timeline = {};
+				Object.keys(marketValue).sort().forEach(function(key) {
+					timeline[key] = marketValue[key]
+				})
+
+				console.log(timeline)
+
+				// Push actual data to chart
+				_.each(timeline, function (item, date) {
+					canvas.data.labels.push(date)
+					canvas.data.datasets[0].data.push(item.sales * item.price)
+				})
+
+				// Clear and Render Canvas
+				canvas.context.clearRect(0, 0, canvas.width, canvas.height)
+				new Chart(canvas.context, {
+					type: 'line',
+					data: canvas.data,
+					options: {
+						 tooltips: {
+						 	callbacks: {
+						 		label: function(item, data) {
+						 			return '$' + item.yLabel.toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, '$1,')
+						 		}
+						 	}
+						 }
+					}
 				})
 			})
-
-			_.each(marketValue, function (item, date) {
-				canvas.marketValue.data.labels.push(date)
-				canvas.marketValue.data.datasets[0].data.push(item.sales * item.price)
-			})
-
-			new Chart(canvas.marketValue.context, {
-				type: 'line',
-				data: canvas.marketValue.data,
-				options: {
-					 tooltips: {
-					 	callbacks: {
-					 		label: function(item, data) {
-					 			return '$' + item.yLabel.toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, '$1,')
-					 		}
-					 	}
-					 }
-				}
-			})
-		})
-		
-
-		
+		},
 
 		/**
 		 * Tags Stats
 		 * @type {Object}
 		 */
-		canvas.tagStats.context = document.getElementById('tag-stats').getContext('2d')
-		canvas.tagStats.data = {
-			labels: [],
-			borderWidth: 1,
-			datasets: [{
-				data: [],
-				backgroundColor: ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e67e22', '#e74c3c', '#ecf0f1', '#95a5a6', '#1abc9c', '#34495e'],
-				label: 'Tag Stats'
-			}],
-			labels: []
-		}
+		getTagStats: function () {
+			var self = this, canvas = self.canvas.tagStats
 
-		$.getJSON(apiUrl.concat('dashboard/stats/tags'))
-		.then(function (response) {
-			if (response.error) {
-				alert(response.message)
-				return
+			canvas.context = document.getElementById('tag-stats').getContext('2d')
+			canvas.data = {
+				labels: [],
+				borderWidth: 1,
+				datasets: [{
+					data: [],
+					backgroundColor: ['#2ecc71', '#3498db', '#9b59b6', '#f1c40f', '#e67e22', '#e74c3c', '#ecf0f1', '#95a5a6', '#1abc9c', '#34495e'],
+					label: 'Tag Stats'
+				}],
+				labels: []
 			}
 
-			_.each(response.data, function (item, index) {
-				canvas.tagStats.data.datasets[0].data.push(item.count)
-				canvas.tagStats.data.labels.push(item.label)
-			})
+			$.getJSON(apiUrl.concat('dashboard/stats/tags')).then(function (response) {
+				if (response.error) {alert(response.message); return}
 
-			canvas.tagStats.data.datasets[0].backgroundColor = _.shuffle(canvas.tagStats.data.datasets[0].backgroundColor)
+				_.each(response.data, function (item, index) {
+					canvas.data.datasets[0].data.push(item.count)
+					canvas.data.labels.push(item.label)
+				})
 
-			new Chart(canvas.tagStats.context, {
-				type: 'pie',
-				data: canvas.tagStats.data
+				canvas.context.clearRect(0, 0, canvas.width, canvas.height)
+				new Chart(canvas.context, {
+					type: 'pie',
+					data: canvas.data
+				})
 			})
-		})
+		}
+	},
+	ready: function () {
+		this.getMarketValue("today")
+		this.getTagStats()
 	}
 });
 
