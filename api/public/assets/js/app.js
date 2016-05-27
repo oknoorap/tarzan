@@ -75,7 +75,7 @@ App.dashboard = Vue.extend({
 
 				var data,
 				marketValue = {},
-				dateFormat = "DD/MM/YYYY H:mm A"
+				dateFormat = "DD/MM/YYYY H:00 A"
 
 				data = response.data.filter(function (item) {
 					return item.sales !== undefined && item.price !== undefined && item.sales !== null && item.price > 0
