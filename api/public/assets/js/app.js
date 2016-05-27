@@ -32,7 +32,16 @@ App.dashboard = Vue.extend({
 		waitForData: false
 	},
 	data: function () {
-		return {canvas: {tagStats: {}, marketValue: {}}}
+		return {
+			tab: {
+				market: 'today'
+			},
+
+			canvas: {
+				tagStats: {},
+				marketValue: {}
+			}
+		}
 	},
 	methods: {
 		/**
@@ -73,48 +82,15 @@ App.dashboard = Vue.extend({
 			$.getJSON(apiUrl.concat('dashboard/stats/market?date=', date)).then(function (response) {
 				if (response.error) { alert(response.message); return }
 
-				var data,
-				marketValue = {},
-				dateFormat = "DD/MM/YYYY H:00 A"
-
-				data = response.data.filter(function (item) {
-					return item.sales !== undefined && item.price !== undefined && item.sales !== null && item.price > 0
-				})
-
-				// Get item sales by individual item
-				// Then sum with all items
-				_.each(data, function (item) {
-
-					// Get the same time of document,
-					// Prevent duplicate unixtime of timeline when scraping
-					_.each(item.sales, function (sales, index) {
-						var date = moment.unix(sales.date).format(dateFormat), salesValue = sales.value
-
-    					if (index > 0) salesValue = salesValue - item.sales[index - 1].value
-						if (!marketValue[date]) marketValue[date] = {sales: 0, price: 0}
-						marketValue[date].sales += parseInt(salesValue)
-						marketValue[date].price += parseInt(item.price)
-					})
-				})
-
-
-				// Ordering by timeline
-				var timeline = {};
-				Object.keys(marketValue).sort().forEach(function(key) {
-					timeline[key] = marketValue[key]
-				})
-
-				console.log(timeline)
-
 				// Push actual data to chart
-				_.each(timeline, function (item, date) {
+				_.each(response.data, function (item, date) {
 					canvas.data.labels.push(date)
 					canvas.data.datasets[0].data.push(item.sales * item.price)
 				})
 
 				// Clear and Render Canvas
-				canvas.context.clearRect(0, 0, canvas.width, canvas.height)
-				new Chart(canvas.context, {
+				if (canvas.chart) canvas.chart.destroy()
+				canvas.chart = new Chart(canvas.context, {
 					type: 'line',
 					data: canvas.data,
 					options: {
@@ -128,6 +104,11 @@ App.dashboard = Vue.extend({
 					}
 				})
 			})
+		},
+
+		viewMarketValue: function (date) {
+			this.getMarketValue(date)
+			this.tab.market = date
 		},
 
 		/**
@@ -157,8 +138,8 @@ App.dashboard = Vue.extend({
 					canvas.data.labels.push(item.label)
 				})
 
-				canvas.context.clearRect(0, 0, canvas.width, canvas.height)
-				new Chart(canvas.context, {
+				if (canvas.chart) canvas.chart.destroy()
+				canvas.chart = new Chart(canvas.context, {
 					type: 'pie',
 					data: canvas.data
 				})

@@ -80,11 +80,11 @@
 		<div class="uk-width-1-1">
 			<h2>Market Value</h2>
 			<ul class="uk-subnav uk-subnav-pill">
-				<li class="uk-active"><a href="#">Today</a></li>
-				<li><a href="#">Last 7 Days</a></li>
-				<li><a href="#">This Month</a></li>
-				<li><a href="#">Last Month</a></li>
-				<li><a href="#">This Year</a></li>
+				<li :class="{'uk-active': tab.market === 'today'}"><a @click="viewMarketValue('today')">Today</a></li>
+				<li :class="{'uk-active': tab.market === 'week'}"><a @click="viewMarketValue('week')">Last 7 Days</a></li>
+				<li :class="{'uk-active': tab.market === 'month'}"><a @click="viewMarketValue('month')">This Month</a></li>
+				<li :class="{'uk-active': tab.market === 'lastmonth'}"><a @click="viewMarketValue('lastmonth')">Last Month</a></li>
+				<li :class="{'uk-active': tab.market === 'year'}"><a @click="viewMarketValue('year')">This Year</a></li>
 			</ul>
 
 			<div class="uk-grid uk-grid-collapse">
