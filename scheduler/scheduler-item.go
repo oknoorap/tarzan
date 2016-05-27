@@ -8,6 +8,7 @@ import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"gopkg.in/redis.v3"
+	"sync"
 )
 
 var (
@@ -86,21 +87,33 @@ func check () {
 		err := iterate.All(&result)
 
 		if err == nil {
-			// Connect redis
-			redis, err := dialRedis()
-			if err != nil {
-				log.Println(err)
-			}
-
+			var wg sync.WaitGroup
 			for _, item := range result {
-		    	err := redis.RPush("resque:queue:main", `{"class":"GetItem","args":[{"url":"`+ item.Url +`"}]}`).Err()
-
-				if err != nil {
-					log.Println(err)
-				}
+				addItem(item.Url, &wg)
 			}
+			wg.Wait()
 		} else {
 			log.Println(err)
 		}
 	}
+}
+
+
+func addItem (url string, wg *sync.WaitGroup) {
+	wg.Add(1)
+    go func() {
+		// Connect redis
+		redis, err := dialRedis()
+		if err != nil {
+			log.Println(err)
+		}
+
+		rpush := redis.RPush("resque:queue:main", `{"class":"GetItem","args":[{"url":"`+ url +`"}]}`).Err()
+
+		if rpush != nil {
+			log.Println(err)
+		}
+
+		wg.Done()
+    }()
 }
