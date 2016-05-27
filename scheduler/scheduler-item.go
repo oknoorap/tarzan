@@ -93,7 +93,7 @@ func check () {
 			}
 
 			for _, item := range result {
-		    	err := redis.RPush("resque:queue:main", `{"class":"GetPageItems","args":[{"url":"`+ item.Url +`"}]}`).Err()
+		    	err := redis.RPush("resque:queue:main", `{"class":"GetItem","args":[{"url":"`+ item.Url +`"}]}`).Err()
 
 				if err != nil {
 					log.Println(err)
