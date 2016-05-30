@@ -43,75 +43,77 @@ func GetItem (queue string, args ...interface{}) error {
 	is_wordpress := strings.Contains(strings.ToLower(nav), "wordpress")
 	site_name, site_name_ok := doc.Find(`meta[property="og:site_name"]`).Attr("content")
 
-	if is_wordpress && site_name_ok && site_name == "ThemeForest" {
 
-		// Default data
-		data := map[string]interface{}{
-			"item_id": 0,
-			"title": "",
-			"sales": 0,
-			"price": 0,
-			"created": "",
-			"author": "",
-			"category": "",
-			"url": "",
-			"tags": []string{},
+
+	// Default data
+	data := map[string]interface{}{
+		"item_id": 0,
+		"title": "",
+		"sales": 0,
+		"price": 0,
+		"created": "",
+		"author": "",
+		"category": "",
+		"url": "",
+		"tags": []string{},
+	}
+
+	/**
+	 * Parsing data
+	 */
+	
+	// Item Id
+	item_id := getItemId(uri)
+	data["item_id"] = item_id
+	
+	// Title
+	title := doc.Find("title").Text()
+	data["title"] = strings.Trim(title, " ")
+
+	// Sales
+	sales, sales_ok := doc.Find(`meta[itemprop="interactionCount"]`).Attr("content")
+	if sales_ok {
+		sales_count := strings.Replace(sales, "UserDownloads:", "", 1)
+		if sales_int, err := strconv.Atoi(sales_count); err == nil {
+			data["sales"] = sales_int
 		}
+	}
 
-		/**
-		 * Parsing data
-		 */
-		
-		// Item Id
-		item_id := getItemId(uri)
-		data["item_id"] = item_id
-		
-		// Title
-		title := doc.Find("title").Text()
-		data["title"] = strings.Trim(title, " ")
+	// Date uploaded
+	created, created_ok := doc.Find(`time[itemprop="dateCreated"]`).Attr("datetime")
+	if created_ok {
+		data["created"] = created
+	}
 
-		// Sales
-		sales, sales_ok := doc.Find(`meta[itemprop="interactionCount"]`).Attr("content")
-		if sales_ok {
-			sales_count := strings.Replace(sales, "UserDownloads:", "", 1)
-			if sales_int, err := strconv.Atoi(sales_count); err == nil {
-				data["sales"] = sales_int
-			}
+	// Tags
+	var tags []string
+	doc.Find(".meta-attributes__attr-tags a").Each(func(i int, s *goquery.Selection) {
+		tags = append(tags, s.Text())
+	})
+	data["tags"] = tags
+
+	// Author
+	author := doc.Find(`a[rel="author"]`).Text()
+	data["author"] = strings.Trim(author, " ")
+
+	// Category
+	category := doc.Find(`a[itemprop="genre"]`).Text()
+	data["category"] = strings.Trim(category, " ")
+
+	// Get Item price
+	price, price_ok := doc.Find(`meta[itemprop="price"]`).Attr("content")
+	if price_ok {
+		price_float, err := strconv.ParseFloat(price, 64)
+		if err == nil {
+			data["price"] = price_float
+		} else {
+			log.Println(err)
 		}
+	}
 
-		// Date uploaded
-		created, created_ok := doc.Find(`time[itemprop="dateCreated"]`).Attr("datetime")
-		if created_ok {
-			data["created"] = created
-		}
+	if data["author"] != "" {
 
-		// Tags
-		var tags []string
-		doc.Find(".meta-attributes__attr-tags a").Each(func(i int, s *goquery.Selection) {
-			tags = append(tags, s.Text())
-		})
-		data["tags"] = tags
-
-		// Author
-		author := doc.Find(`a[rel="author"]`).Text()
-		data["author"] = strings.Trim(author, " ")
-
-		// Category
-		category := doc.Find(`a[itemprop="genre"]`).Text()
-		data["category"] = strings.Trim(category, " ")
-
-		// Get Item price
-		price, price_ok := doc.Find(`meta[itemprop="price"]`).Attr("content")
-		if price_ok {
-			price_float, err := strconv.ParseFloat(price, 64)
-			if err == nil {
-				data["price"] = price_float
-			} else {
-				log.Println(err)
-			}
-		}
-
-		if data["author"] != "" {
+		if is_wordpress && site_name_ok && site_name == "ThemeForest" {
 
 			// Connect to database
 			db, err := connectDb()
@@ -162,28 +164,28 @@ func GetItem (queue string, args ...interface{}) error {
 				}
 			}
 		} else {
-			// Wait 10 seconds, after that push existing error task as new task
-			timer := time.NewTimer(time.Second * 10)
-			<- timer.C
-
-			// Connect redis
-			redis, err := dialRedis()
-			if err != nil {
-				log.Println(err)
-			}
-
-			// Since we're have a connection trouble
-			// Add again to task
-			rpush := redis.RPush("resque:queue:" + queue, `{"class":"GetItem","args":[{"url":"`+ uri +`"}]}`).Err()
-			if rpush != nil {
-				log.Println(rpush)
-			}
-
-			log.Println("Item ID not found, recrawling")
-			return nil
+			log.Println("It's not wordpress")
 		}
 	} else {
-		log.Println("It's not wordpress")
+		// Wait 10 seconds, after that push existing error task as new task
+		timer := time.NewTimer(time.Second * 10)
+		<- timer.C
+
+		// Connect redis
+		redis, err := dialRedis()
+		if err != nil {
+			log.Println(err)
+		}
+
+		// Since we're have a connection trouble
+		// Add again to task
+		rpush := redis.RPush("resque:queue:" + queue, `{"class":"GetItem","args":[{"url":"`+ uri +`"}]}`).Err()
+		if rpush != nil {
+			log.Println(rpush)
+		}
+
+		log.Println("Item ID not found, recrawling")
+		return nil
 	}
 
 	return nil
