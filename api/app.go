@@ -5,6 +5,9 @@ import (
 	"github.com/labstack/echo/engine/standard"
 	"github.com/labstack/echo/middleware"
 	"html/template"
+	"os"
+	"path"
+	"log"
 	api "./v1"
 )
 
@@ -59,9 +62,15 @@ func main () {
 	e.POST(apiVersion + "/search", api.Search)
 
 
+	// Get CWD
+	cwd, err := os.Getwd()
+	if err != nil {
+		log.Println(err)
+	}
+
 	// Configure template engine
 	e.SetRenderer(&Template{
-		templates: template.Must(template.ParseGlob("public/views/*.html")),
+		templates: template.Must(template.ParseGlob(path.Join(cwd, "public/views/*.html"))),
 	})
 
 	// Dashboard
