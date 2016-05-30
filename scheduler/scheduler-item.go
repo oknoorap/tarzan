@@ -88,8 +88,14 @@ func check () {
 
 		if err == nil {
 			var wg sync.WaitGroup
+			// Connect redis
+			redis, err := dialRedis()
+			if err != nil {
+				log.Println(err)
+			}
+
 			for _, item := range result {
-				addItem(item.Url, &wg)
+				addItem(item.Url, &wg, redis)
 			}
 			wg.Wait()
 		} else {
@@ -99,19 +105,12 @@ func check () {
 }
 
 
-func addItem (url string, wg *sync.WaitGroup) {
+func addItem (url string, wg *sync.WaitGroup, redis *redis.Client) {
 	wg.Add(1)
     go func() {
-		// Connect redis
-		redis, err := dialRedis()
-		if err != nil {
-			log.Println(err)
-		}
-
 		rpush := redis.RPush("resque:queue:main", `{"class":"GetItem","args":[{"url":"`+ url +`"}]}`).Err()
-
 		if rpush != nil {
-			log.Println(err)
+			log.Println(rpush)
 		}
 
 		wg.Done()
