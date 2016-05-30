@@ -13,12 +13,19 @@ import (
 )
 
 func main () {
+	// Get CWD
+	cwd, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		log.Println(err)
+	}
+
+	
 	// Api Version
 	apiVersion := "/api/v1"
 	e := echo.New()
 
 	// Static files
-	e.Static("assets", "public/assets")
+	e.Static("assets", path.Join(cwd, "public/assets"))
 
 	// Middleware
 	e.Use(middleware.Logger())
@@ -61,13 +68,6 @@ func main () {
 	// Misc method
 	e.GET(apiVersion + "/list/category", api.CategoryList)
 	e.POST(apiVersion + "/search", api.Search)
-
-
-	// Get CWD
-	cwd, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		log.Println(err)
-	}
 
 	// Configure template engine
 	e.SetRenderer(&Template{
