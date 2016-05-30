@@ -63,12 +63,12 @@
 	<div data-uk-sticky>
 		<div style="width:100%">
 			<div class="dashboard-sticky">
-				<ul class="uk-subnav uk-subnav-pill">
-					<li class="uk-active"><a>Market Value</a></li>
-					<li><a>Best Selling</a></li>
-					<li><a>Categories Value</a></li>
-					<li><a>Subscribe Stats</a></li>
-					<li><a>Misc</a></li>
+				<ul class="uk-subnav uk-subnav-pill" data-uk-scrollspy-nav="{closest: 'li', smoothscroll: {offset: 50}}">
+					<li class="uk-active"><a href="#market-value-wrapper">Market Value</a></li>
+					<li><a href="#best-selling-wrapper">Best Selling</a></li>
+					<li><a href="#categories-value-wrapper">Categories Value</a></li>
+					<li><a href="#subscribe-stats-wrapper">Subscribe Stats</a></li>
+					<li><a href="#misc-wrapper">Misc</a></li>
 				</ul>
 			</div>
 		</div>
@@ -76,7 +76,7 @@
 
 	<hr />
 	
-	<section class="uk-grid">
+	<section class="uk-grid" id="market-value-wrapper">
 		<div class="uk-width-1-1">
 			<h2>Market Value</h2>
 			<ul class="uk-subnav uk-subnav-pill">
@@ -95,7 +95,7 @@
 		</div>
 	</section>
 
-	<section class="uk-grid">
+	<section class="uk-grid" id="best-selling-wrapper">
 		<div class="uk-width-1-1">
 			<h2>Best Selling</h2>
 			<ul class="uk-subnav uk-subnav-pill">
@@ -108,33 +108,53 @@
 		</div>
 	</section>
 
-	<section class="uk-grid">
+	<section class="uk-grid" id="categories-value-wrapper">
 		<div class="uk-width-1-1">
 			<h2>Market Value by Categories</h2>
-			<ul class="uk-subnav uk-subnav-pill">
-				<li class="uk-active"><a href="#">Today</a></li>
-				<li><a href="#">Last 7 Days</a></li>
-				<li><a href="#">This Month</a></li>
-				<li><a href="#">Last Month</a></li>
-				<li><a href="#">This Year</a></li>
-			</ul>
+			<div class="uk-grid uk-grid-collapse">
+				<div class="uk-width-6-10">
+					<ul class="uk-subnav uk-subnav-pill">
+						<li class="uk-active"><a href="#">Today</a></li>
+						<li><a href="#">Last 7 Days</a></li>
+						<li><a href="#">This Month</a></li>
+						<li><a href="#">Last Month</a></li>
+						<li><a href="#">This Year</a></li>
+					</ul>
+				</div>
+				<div class="uk-width-4-10 uk-form">
+					<select v-model="selectedCategory" class="uk-align-right">
+						<option value="">Select Category</option>
+						<option v-for="category in categories" :value="category">${category}</option>
+					</select>
+				</div>
+			</div>
 		</div>
 	</section>
 
-	<section class="uk-grid">
+	<section class="uk-grid" id="subscribe-stats-wrapper">
 		<div class="uk-width-1-1">
 			<h2>Subscribe Stats</h2>
-			<ul class="uk-subnav uk-subnav-pill">
-				<li class="uk-active"><a href="#">Today</a></li>
-				<li><a href="#">Last 7 Days</a></li>
-				<li><a href="#">This Month</a></li>
-				<li><a href="#">Last Month</a></li>
-				<li><a href="#">This Year</a></li>
-			</ul>
+			<div class="uk-grid uk-grid-collapse">
+				<div class="uk-width-6-10">
+					<ul class="uk-subnav uk-subnav-pill">
+						<li class="uk-active"><a href="#">Today</a></li>
+						<li><a href="#">Last 7 Days</a></li>
+						<li><a href="#">This Month</a></li>
+						<li><a href="#">Last Month</a></li>
+						<li><a href="#">This Year</a></li>
+					</ul>
+				</div>
+				<div class="uk-width-4-10 uk-form">
+					<select v-model="selectedGroup" class="uk-align-right">
+						<option value="">Select Group</option>
+						<option v-for="group in groups" :value="group.id">${group.name}</option>
+					</select>
+				</div>
+			</div>
 		</div>
 	</section>
 
-	<section class="uk-grid">
+	<section class="uk-grid" id="misc-wrapper">
 		<div class="uk-width-1-1">
 			<h2>Misc</h2>
 			<div class="uk-grid">
@@ -448,13 +468,8 @@
 		<form class="uk-form" v-if="currentTab==='search'">
 			<div class="uk-grid uk-grid-small" v-for="filter in filters">
 				<div class="uk-width-1-10">
-					<select v-model="filter.add" class="uk-width-1-1">
-						<option value="include">Include</option>
-						<option value="exclude">Exclude</option>
-					</select>
-				</div>
-				<div class="uk-width-1-10">
 					<select v-model="filter.field" class="uk-width-1-1">
+						<option value="title">Title</option>
 						<option value="price">Price</option>
 						<option value="author">Author</option>
 						<option value="sales">Sales</option>
@@ -484,6 +499,17 @@
 					</select>
 					<select v-model="filter.criteria.tags" v-if="filter.field ==='tags'" class="uk-width-1-1">
 						<option value="">Select Filter</option>
+						<option value="$eq">Equals To</option>
+						<option value="$ne">Not Equals To</option>
+						<option value="c">Contains</option>
+						<option value="!c">Not Contains</option>
+						<option value="^">Begins With</option>
+						<option value="$">Ends With</option>
+					</select>
+					<select v-model="filter.criteria.title" v-if="filter.field ==='title'" class="uk-width-1-1">
+						<option value="">Select Filter</option>
+						<option value="$eq">Equals To</option>
+						<option value="$ne">Not Equals To</option>
 						<option value="c">Contains</option>
 						<option value="!c">Not Contains</option>
 						<option value="^">Begins With</option>
@@ -492,6 +518,7 @@
 					<select v-model="filter.criteria.author" v-if="filter.field === 'author'" class="uk-width-1-1">
 						<option value="">Select Filter</option>
 						<option value="$eq">Equals To</option>
+						<option value="$ne">Not Equals To</option>
 						<option value="c">Contains</option>
 						<option value="!c">Not Contains</option>
 						<option value="^">Begins With</option>
@@ -519,14 +546,14 @@
 			<span v-if="waiting"><i class="uk-icon-spin uk-icon-spinner"></i> Searching...</span>
 			<div class="uk-grid">
 				<div class="uk-width-4-10">
-					<h3 v-if="total>1">We've found <strong style="text-decoration: underline">${total}</strong> items in our database</h3>
+					<h3 v-if="total>0">We've found <strong style="text-decoration: underline">${total}</strong> items in our database</h3>
 					<h3 v-if="total===0">It's seems our database can't found any single item.</h3>
 				</div>
 				<div class="uk-width-6-10">
 					<ul id="pagination-search" v-if="total>100" class="uk-pagination" data-uk-pagination="${pagination|json}" style="text-align: right"></ul>
 				</div>
 			</div>
-			<div v-if="total>1" class="uk-grid">
+			<div v-if="total>0" class="uk-grid">
 				<div class="uk-width-1-1">
 					<table class="uk-table uk-table-hover uk-table-striped uk-table-condensed">
 						<thead>
@@ -565,6 +592,7 @@
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/uikit/2.26.3/js/uikit.min.js" defer></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/uikit/2.26.3/js/components/pagination.min.js" defer></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/uikit/2.26.3/js/components/sticky.min.js" defer></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/uikit/2.26.3/js/core/scrollspy.min.js" defer></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js" defer></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/async/1.5.2/async.min.js" defer></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.13.0/moment.min.js"></script>

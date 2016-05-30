@@ -37,6 +37,10 @@ App.dashboard = Vue.extend({
 				market: 'today'
 			},
 
+			selectedCategory: '',
+			selectedGroup: '',
+			categories: [],
+			groups: [],
 			canvas: {
 				tagStats: {},
 				marketValue: {}
@@ -44,6 +48,40 @@ App.dashboard = Vue.extend({
 		}
 	},
 	methods: {
+		/**
+		 * Get Categories List
+		 * @return {Object}
+		 */
+		getCategories: function () {
+			var self = this
+			$.getJSON(apiUrl.concat('list/category'))
+			.then(function (response) {
+				if (response.error) {
+					alert(response.message)
+					return
+				}
+
+				self.categories = response.list
+			})
+		},
+
+		/**
+		 * Get Group List
+		 * @return {Object}
+		 */
+		getGroups: function () {
+			var self = this
+			$.getJSON(apiUrl.concat('list/subscribe/group'))
+			.then(function (response) {
+				if (response.error) {
+					alert(response.message)
+					return
+				}
+
+				self.groups = response.list
+			})
+		},
+
 		/**
 		 * Get Market Value (All categories) by date
 		 * @param  {string} date
@@ -141,7 +179,12 @@ App.dashboard = Vue.extend({
 				if (canvas.chart) canvas.chart.destroy()
 				canvas.chart = new Chart(canvas.context, {
 					type: 'pie',
-					data: canvas.data
+					data: canvas.data,
+					options: {
+						animation: {
+							animateRotate: true
+						}
+					}
 				})
 			})
 		}
@@ -149,6 +192,8 @@ App.dashboard = Vue.extend({
 	ready: function () {
 		this.getMarketValue("today")
 		this.getTagStats()
+		this.getCategories()
+		this.getGroups()
 	}
 });
 
@@ -781,18 +826,18 @@ App.search = Vue.extend({
 			waiting: false,
 			defaultFilter: {
 				add: 'include',
-				field: 'price',
-				criteria: {number: '$gte', author: '', tags: '', category: ''},
+				field: 'title',
+				criteria: {number: '$gte', author: '', tags: '', category: '', 'title': ''},
 				date: 'today',
-				value: null
+				value: ''
 			},
 
 			filters: [{
 				add: 'include',
-				field: 'price',
-				criteria: {number: '$gte', author: '', tags: '', category: ''},
+				field: 'title',
+				criteria: {number: '$gte', author: '', tags: '', category: '', 'title': ''},
 				date: 'today',
-				value: 0
+				value: 'Wordpress'
 			}],
 
 			list: null,
@@ -814,6 +859,7 @@ App.search = Vue.extend({
 		},
 
 		fetch: function (offset) {
+			if (offset === undefined) return
 			var self = this
 			$.post(apiUrl.concat('search', '?offset=', offset), {search: self.params}).then(function (response) {
 				if (response.error) {
@@ -861,9 +907,10 @@ App.search = Vue.extend({
 				function (next) {
 					var searchFilters = {
 						price: {$not: {}},
-						author: {regex: []},
-						tags: {regex: []},
-						category: {regex: []},
+						author: {regex: [], options: "", not: false},
+						tags: {regex: [], options: "", not: false},
+						category: {regex: [], options: "", not: false},
+						title: {regex: [], options: "", not: false},
 						sales: {}
 					} 
 
@@ -901,39 +948,55 @@ App.search = Vue.extend({
 
 							case 'tags':
 							case 'author':
-								var regex = ''
+							case 'title':
+								var regex = '',
+								options = 'i',
+								not = false,
+								value = item.value
+
+								// Strip |
+								value = value.replace(/\|/g, "\\|").replace(/\-/g, "\\-")
 
 								// Get item field
-								console.log(self.filters)
 								if (item.field === 'tags') {
-									item.value = item.value.split(',').map($.trim)
+									value = value.split(',').map($.trim)
 								} else {
-									item.value = [item.value]
+									value = [value]
 								}
 
 								switch (item.criteria[item.field]) {
 									case '$eq':
-										regex = '(^'+ item.value.join('|') +'$)'
+										regex = '(^'+ value.join('|') +'$)'
+										options = ''
+									break;
+
+									case '$ne':
+										regex = '(^'+ value.join('|') +'$)'
+										not = true
+										options = ''
 									break;
 
 									case '^':
-										regex = '(^'+ item.value.join('|') +')'
+										regex = '(^'+ value.join('|') +')'
 										break;
 
 									case '$':
-										regex = '('+ item.value.join('|') +'$)'
+										regex = '('+ value.join('|') +'$)'
 										break;
 
 									case '!c':
-										regex = '((?!'+ item.value.join('|') +').)'
+										regex = '(' + value.join('|') + ')'
+										not = true
 										break;
 
 									default:
-										regex = '(' + item.value.join('|') + ')'
+										regex = '(' + value.join('|') + ')'
 										break;
 								}
 
 								field.regex.push(regex)
+								field.options = options
+								field.not = not
 							break;
 
 							case 'category':
@@ -958,6 +1021,7 @@ App.search = Vue.extend({
 
 					// Join all regex
 					searchFilters.category.regex = searchFilters.category.regex.join('|')
+					searchFilters.title.regex = searchFilters.title.regex.join('|')
 					searchFilters.author.regex = searchFilters.author.regex.join('|')
 					searchFilters.tags.regex = searchFilters.tags.regex.join('|')
 
@@ -991,6 +1055,7 @@ App.search = Vue.extend({
 
 				// Done
 			], function (err, params) {
+				//console.log(params)
 				self.params = params
 				self.fetch(0)
 			})

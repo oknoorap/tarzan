@@ -87,30 +87,61 @@ func Search (c echo.Context) error {
 		// Convert string to bson.RegEx
 		// And then delete it
 		// Author
+		operator := "$regex"
 		author := reflect.ValueOf(search["author"])
 		if author.IsValid() {
 			regex := author.MapIndex(reflect.ValueOf("regex")).Elem().String()
-			author.SetMapIndex(reflect.ValueOf("$regex"), reflect.ValueOf(bson.RegEx{regex, "i"}))
+			options := author.MapIndex(reflect.ValueOf("options")).Elem().String()
+			if author.MapIndex(reflect.ValueOf("not")).Elem().Bool() {
+				operator = "$not"
+			}
+			author.SetMapIndex(reflect.ValueOf(operator), reflect.ValueOf(bson.RegEx{regex, options}))
 			author.SetMapIndex(reflect.ValueOf("regex"), reflect.Value{})
+			author.SetMapIndex(reflect.ValueOf("options"), reflect.Value{})
+			author.SetMapIndex(reflect.ValueOf("not"), reflect.Value{})
 		}
 
 		// tags
 		tags := reflect.ValueOf(search["tags"])
 		if tags.IsValid() {
 			regex := tags.MapIndex(reflect.ValueOf("regex")).Elem().String()
-			tags.SetMapIndex(reflect.ValueOf("$regex"), reflect.ValueOf(bson.RegEx{regex, "i"}))
+			options := tags.MapIndex(reflect.ValueOf("options")).Elem().String()
+			if tags.MapIndex(reflect.ValueOf("not")).Elem().Bool() {
+				operator = "$not"
+			}
+			tags.SetMapIndex(reflect.ValueOf(operator), reflect.ValueOf(bson.RegEx{regex, options}))
 			tags.SetMapIndex(reflect.ValueOf("regex"), reflect.Value{})
+			tags.SetMapIndex(reflect.ValueOf("options"), reflect.Value{})
+			tags.SetMapIndex(reflect.ValueOf("not"), reflect.Value{})
 		}
 
 		// Category
 		category := reflect.ValueOf(search["category"])
 		if category.IsValid() {
 			regex := category.MapIndex(reflect.ValueOf("regex")).Elem().String()
-			category.SetMapIndex(reflect.ValueOf("$regex"), reflect.ValueOf(bson.RegEx{regex, "i"}))
+			options := category.MapIndex(reflect.ValueOf("options")).Elem().String()
+			if category.MapIndex(reflect.ValueOf("not")).Elem().Bool() {
+				operator = "$not"
+			}
+			category.SetMapIndex(reflect.ValueOf(operator), reflect.ValueOf(bson.RegEx{regex, options}))
 			category.SetMapIndex(reflect.ValueOf("regex"), reflect.Value{})
+			category.SetMapIndex(reflect.ValueOf("options"), reflect.Value{})
+			category.SetMapIndex(reflect.ValueOf("not"), reflect.Value{})
 		}
 
-		log.Println(search)
+		// title
+		title := reflect.ValueOf(search["title"])
+		if title.IsValid() {
+			regex := title.MapIndex(reflect.ValueOf("regex")).Elem().String()
+			options := title.MapIndex(reflect.ValueOf("options")).Elem().String()
+			if title.MapIndex(reflect.ValueOf("not")).Elem().Bool() {
+				operator = "$not"
+			}
+			title.SetMapIndex(reflect.ValueOf(operator), reflect.ValueOf(bson.RegEx{regex, options}))
+			title.SetMapIndex(reflect.ValueOf("regex"), reflect.Value{})
+			title.SetMapIndex(reflect.ValueOf("options"), reflect.Value{})
+			title.SetMapIndex(reflect.ValueOf("not"), reflect.Value{})
+		}
 
 		// Set collection as item
 		collection := dbSession.DB("tarzan").C("item")
