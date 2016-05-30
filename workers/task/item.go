@@ -27,7 +27,7 @@ func GetItem (queue string, args ...interface{}) error {
 
 	// Tell error to console
 	if err != nil {
-		log.Println("Error:", err)
+		log.Println("Error:", err.Error())
 		return nil
 	}
 
@@ -35,145 +35,155 @@ func GetItem (queue string, args ...interface{}) error {
 	html := strings.NewReader(body)
 	doc, err := goquery.NewDocumentFromReader(html)
 	if err != nil {
-		log.Println("Error:", err)
+		log.Println("Error:", err.Error())
 		return nil
 	}
 
-	// Default data
-	data := map[string]interface{}{
-		"item_id": 0,
-		"title": "",
-		"sales": 0,
-		"price": 0,
-		"created": "",
-		"author": "",
-		"category": "",
-		"url": "",
-		"tags": []string{},
-	}
+	nav := doc.Find("nav.breadcrumbs.h-text-truncate a").Text()
+	is_wordpress := strings.Contains(strings.ToLower(nav), "wordpress")
+	site_name, site_name_ok := doc.Find(`meta[property="og:site_name"]`).Attr("content")
 
-	/**
-	 * Parsing data
-	 */
-	
-	// Item Id
-	item_id := getItemId(uri)
-	data["item_id"] = item_id
-	
-	// Title
-	title := doc.Find("title").Text()
-	data["title"] = strings.Trim(title, " ")
+	if is_wordpress && site_name_ok && site_name == "ThemeForest" {
 
-	// Sales
-	sales, sales_ok := doc.Find(`meta[itemprop="interactionCount"]`).Attr("content")
-	if sales_ok {
-		sales_count := strings.Replace(sales, "UserDownloads:", "", 1)
-		if sales_int, err := strconv.Atoi(sales_count); err == nil {
-			data["sales"] = sales_int
+		// Default data
+		data := map[string]interface{}{
+			"item_id": 0,
+			"title": "",
+			"sales": 0,
+			"price": 0,
+			"created": "",
+			"author": "",
+			"category": "",
+			"url": "",
+			"tags": []string{},
 		}
-	}
 
-	// Date uploaded
-	created, created_ok := doc.Find(`time[itemprop="dateCreated"]`).Attr("datetime")
-	if created_ok {
-		data["created"] = created
-	}
+		/**
+		 * Parsing data
+		 */
+		
+		// Item Id
+		item_id := getItemId(uri)
+		data["item_id"] = item_id
+		
+		// Title
+		title := doc.Find("title").Text()
+		data["title"] = strings.Trim(title, " ")
 
-	// Tags
-	var tags []string
-	doc.Find(".meta-attributes__attr-tags a").Each(func(i int, s *goquery.Selection) {
-		tags = append(tags, s.Text())
-	})
-	data["tags"] = tags
-
-	// Author
-	author := doc.Find(`a[rel="author"]`).Text()
-	data["author"] = strings.Trim(author, " ")
-
-	// Category
-	category := doc.Find(`a[itemprop="genre"]`).Text()
-	data["category"] = strings.Trim(category, " ")
-
-	// Get Item price
-	price, price_ok := doc.Find(`meta[itemprop="price"]`).Attr("content")
-	if price_ok {
-		price_float, err := strconv.ParseFloat(price, 64)
-		if err == nil {
-			data["price"] = price_float
-		} else {
-			log.Println(err)
-		}
-	}
-
-	if data["author"] != "" {
-
-		// Connect to database
-		db, err := connectDb()
-		if err != nil {
-			log.Fatalf("Error: %s\n", err)
-		} else {
-
-			// Set Mgo Session
-			db.SetMode(mgo.Monotonic, true)
-			dbSession := db.Copy()
-			defer dbSession.Close()
-
-			// Pick MongoDB collection
-			collection := dbSession.DB("tarzan").C("item")
-
-			// MongoDB data
-			now := int32(time.Now().Unix())
-			fields := bson.M{
-				"$set": bson.M{
-					"item_id": data["item_id"],
-					"title": data["title"],
-					"created": data["created"],
-					"author": data["author"],
-					"category": data["category"],
-					"price": data["price"],
-					"url": uri,
-					"tags": tags,
-					"time": now,
-				},
-
-				"$push": bson.M{
-					"sales": bson.M{
-						"date": now,
-						"value": data["sales"],
-					},
-				},
+		// Sales
+		sales, sales_ok := doc.Find(`meta[itemprop="interactionCount"]`).Attr("content")
+		if sales_ok {
+			sales_count := strings.Replace(sales, "UserDownloads:", "", 1)
+			if sales_int, err := strconv.Atoi(sales_count); err == nil {
+				data["sales"] = sales_int
 			}
+		}
 
-			// Upsert `page` collection
-			_, err := collection.Upsert(bson.M{"item_id": item_id}, fields)
-			if err != nil {
-				log.Println("Error:", err)
+		// Date uploaded
+		created, created_ok := doc.Find(`time[itemprop="dateCreated"]`).Attr("datetime")
+		if created_ok {
+			data["created"] = created
+		}
+
+		// Tags
+		var tags []string
+		doc.Find(".meta-attributes__attr-tags a").Each(func(i int, s *goquery.Selection) {
+			tags = append(tags, s.Text())
+		})
+		data["tags"] = tags
+
+		// Author
+		author := doc.Find(`a[rel="author"]`).Text()
+		data["author"] = strings.Trim(author, " ")
+
+		// Category
+		category := doc.Find(`a[itemprop="genre"]`).Text()
+		data["category"] = strings.Trim(category, " ")
+
+		// Get Item price
+		price, price_ok := doc.Find(`meta[itemprop="price"]`).Attr("content")
+		if price_ok {
+			price_float, err := strconv.ParseFloat(price, 64)
+			if err == nil {
+				data["price"] = price_float
 			} else {
-				if data["item_id"] != 0 {
-					log.Println("Done, ItemId: ", data["item_id"])
+				log.Println(err)
+			}
+		}
+
+		if data["author"] != "" {
+
+			// Connect to database
+			db, err := connectDb()
+			if err != nil {
+				log.Fatalf("Error: %s\n", err)
+			} else {
+
+				// Set Mgo Session
+				db.SetMode(mgo.Monotonic, true)
+				dbSession := db.Copy()
+				defer dbSession.Close()
+
+				// Pick MongoDB collection
+				collection := dbSession.DB("tarzan").C("item")
+
+				// MongoDB data
+				now := int32(time.Now().Unix())
+				fields := bson.M{
+					"$set": bson.M{
+						"item_id": data["item_id"],
+						"title": data["title"],
+						"created": data["created"],
+						"author": data["author"],
+						"category": data["category"],
+						"price": data["price"],
+						"wordpress": is_wordpress,
+						"url": uri,
+						"tags": tags,
+						"time": now,
+					},
+
+					"$push": bson.M{
+						"sales": bson.M{
+							"date": now,
+							"value": data["sales"],
+						},
+					},
+				}
+
+				// Upsert `page` collection
+				_, err := collection.Upsert(bson.M{"item_id": item_id}, fields)
+				if err != nil {
+					log.Println("Error:", err)
+				} else {
+					if data["item_id"] != 0 {
+						log.Println("Done, ItemId: ", data["item_id"])
+					}
 				}
 			}
+		} else {
+			// Wait 10 seconds, after that push existing error task as new task
+			timer := time.NewTimer(time.Second * 10)
+			<- timer.C
+
+			// Connect redis
+			redis, err := dialRedis()
+			if err != nil {
+				log.Println(err)
+			}
+
+			// Since we're have a connection trouble
+			// Add again to task
+			rpush := redis.RPush("resque:queue:" + queue, `{"class":"GetItem","args":[{"url":"`+ uri +`"}]}`).Err()
+			if rpush != nil {
+				log.Println(rpush)
+			}
+
+			log.Println("Item ID not found, recrawling")
+			return nil
 		}
 	} else {
-		// Wait 10 seconds, after that push existing error task as new task
-		timer := time.NewTimer(time.Second * 10)
-    	<- timer.C
-
-		// Connect redis
-		redis, err := dialRedis()
-		if err != nil {
-			log.Println(err)
-		}
-
-		// Since we're have a connection trouble
-		// Add again to task
-		rpush := redis.RPush("resque:queue:" + queue, `{"class":"GetItem","args":[{"url":"`+ uri +`"}]}`).Err()
-		if rpush != nil {
-			log.Println(rpush)
-		}
-
-		log.Println("Item ID not found, recrawling")
-		return nil
+		log.Println("It's not wordpress")
 	}
 
 	return nil
