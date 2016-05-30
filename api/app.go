@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"os"
 	"path"
+	"path/filepath"
 	"log"
 	api "./v1"
 )
@@ -63,7 +64,7 @@ func main () {
 
 
 	// Get CWD
-	cwd, err := os.Getwd()
+	cwd, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		log.Println(err)
 	}
