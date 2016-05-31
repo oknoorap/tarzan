@@ -34,7 +34,9 @@ App.dashboard = Vue.extend({
 	data: function () {
 		return {
 			tab: {
-				market: 'today'
+				'market-value': 'today',
+				'categories-value': 'today',
+				'group-value': 'today'
 			},
 
 			selectedCategory: '',
@@ -42,8 +44,10 @@ App.dashboard = Vue.extend({
 			categories: [],
 			groups: [],
 			canvas: {
-				tagStats: {},
-				marketValue: {}
+				'tag-stats': {},
+				'market-value': {},
+				'categories-value': {},
+				'group-value': {}
 			}
 		}
 	},
@@ -62,6 +66,7 @@ App.dashboard = Vue.extend({
 				}
 
 				self.categories = response.list
+				self.selectedCategory = self.categories[0]
 			})
 		},
 
@@ -79,6 +84,9 @@ App.dashboard = Vue.extend({
 				}
 
 				self.groups = response.list
+				if (self.groups.length>0) {
+					self.selectedGroup = self.groups[0].id
+				}
 			})
 		},
 
@@ -87,11 +95,10 @@ App.dashboard = Vue.extend({
 		 * @param  {string} date
 		 * @return {void}
 		 */
-		getMarketValue: function (date) {
-			var self = this,
-			canvas = self.canvas.marketValue
+		getMarketValue: function (chart, date) {
+			var self = this, canvas = self.canvas[chart]
 
-			canvas.context = document.getElementById('market-value').getContext('2d')
+			canvas.context = document.getElementById(chart).getContext('2d')
 			canvas.data = {
 				labels: [],
 				datasets: [{
@@ -117,7 +124,18 @@ App.dashboard = Vue.extend({
 				}]
 			}
 
-			$.getJSON(apiUrl.concat('dashboard/stats/market?date=', date)).then(function (response) {
+			var endpoint = apiUrl.concat('dashboard/stats/market?date=', date)
+			if (chart === 'categories-value') {
+				if (self.selectedCategory !== '') {
+					endpoint = endpoint.concat('&category=', self.selectedCategory)
+				}
+			} else if (chart === 'group-value') {
+				if (self.selectedGroup !== '') {
+					endpoint = endpoint.concat('&group=', self.selectedGroup)
+				}
+			}
+
+			$.getJSON(endpoint).then(function (response) {
 				if (response.error) { alert(response.message); return }
 
 				// Push actual data to chart
@@ -144,9 +162,15 @@ App.dashboard = Vue.extend({
 			})
 		},
 
-		viewMarketValue: function (date) {
-			this.getMarketValue(date)
-			this.tab.market = date
+
+		/**
+		 * View market value
+		 * @param  {String} date
+		 * @return {void}
+		 */
+		viewMarketValue: function (chart, date) {
+			this.getMarketValue(chart, date)
+			this.tab[chart] = date
 		},
 
 		/**
@@ -154,7 +178,7 @@ App.dashboard = Vue.extend({
 		 * @type {Object}
 		 */
 		getTagStats: function () {
-			var self = this, canvas = self.canvas.tagStats
+			var self = this, canvas = self.canvas['tag-stats']
 
 			canvas.context = document.getElementById('tag-stats').getContext('2d')
 			canvas.data = {
@@ -190,10 +214,18 @@ App.dashboard = Vue.extend({
 		}
 	},
 	ready: function () {
-		this.getMarketValue("today")
-		this.getTagStats()
+		this.viewMarketValue('market-value', 'today')
 		this.getCategories()
 		this.getGroups()
+		this.getTagStats()
+
+		this.$watch('selectedCategory', function () {
+			this.viewMarketValue('categories-value', this.tab['categories-value'])
+		})
+
+		this.$watch('selectedGroup', function () {
+			this.viewMarketValue('group-value', this.tab['group-value'])
+		})
 	}
 });
 
@@ -599,7 +631,7 @@ App.item = {
 	 */
 	view: Vue.extend({
 		template: '#item-view',
-		components: {wrapper: App.wrapper},
+		components: {wrapper: App.wrapper, 'group-selector': App.groupSelector},
 		route: {
 			canReuse: false,
 			waitForData: true,
@@ -607,64 +639,120 @@ App.item = {
 				return this.fetch()
 			},
 		},
+		data: function () {
+			return {
+				tab: 'today',
+				totalRevenue: 0,
+				totalSales: 0,
+				canvas: {},
+				groupSelector: false
+			}
+		},
 		methods: {
-			fetch: function (fn) {
+			/**
+			 * Get market value
+			 * @param  {String} date
+			 * @return {void}
+			 */
+			getMarketValue: function (date) {
+				var self = this
+				self.canvas.context = document.getElementById('item-chart').getContext('2d'),
+				self.canvas.data = {
+					labels: [],
+					datasets: [{
+						label: "Revenue",
+						fill: true,
+						lineTension: 0.1,
+						backgroundColor: "rgba(26, 188, 156, 0.4)",
+						borderColor: "rgba(26, 188, 156,1.0)",
+						borderCapStyle: 'butt',
+						borderDash: [],
+						borderDashOffset: 0.0,
+						borderJoinStyle: 'miter',
+						pointBorderColor: "rgba(22, 160, 133,1.0)",
+						pointBackgroundColor: "rgba(26, 188, 156,1.0)",
+						pointBorderWidth: 2,
+						pointHoverRadius: 5,
+						pointHoverBackgroundColor: "#ffffff",
+						pointHoverBorderColor: "rgba(22, 160, 133,1.0)",
+						pointHoverBorderWidth: 2,
+						pointRadius: 5,
+						pointHitRadius: 10,
+						data: [],
+						sales: []
+					}]
+				}
+
+				$.getJSON(apiUrl.concat('dashboard/stats/market?date=', date, '&item_id=', self.item_id))
+				.then(function (response) {
+					if (response.error) { alert(response.message); return }
+
+					// Push actual data to chart
+					_.each(response.data, function (item, date) {
+						self.canvas.data.labels.push(date)
+						self.canvas.data.datasets[0].data.push(item.sales * item.price)
+						self.canvas.data.datasets[0].sales.push(item.sales)
+					})
+
+					// Clear and Render Canvas
+					if (self.canvas.chart) self.canvas.chart.destroy()
+					self.canvas.chart = new Chart(self.canvas.context, {
+						type: 'line',
+						data: self.canvas.data,
+						options: {
+							 tooltips: {
+							 	callbacks: {
+							 		label: function(item, data) {
+							 			var sales = data.datasets[item.datasetIndex].sales[item.index]
+							 			return sales +' x ' + self.price + ' = $' + (item.yLabel).toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, '$1,')
+							 		}
+							 	}
+							 }
+						}
+					})
+				})
+			},
+
+
+			viewMarketValue: function (date) {
+				this.getMarketValue(date)
+				this.tab = date
+			},
+
+			fetch: function () {
+				var self = this
 				return $.getJSON(apiUrl.concat('item/', this.$route.params.id)).then(function (response) {
 					if (response.error) {
 						alert(response.message)
 						return
 					}
 
-					response.data.created = renderDate(response.data.created)
-					response.data.tags = _.unique(response.data.tags)
-					response.data.totalSales = _.last(response.data.sales).value
-					response.data.totalRevenue = response.data.totalSales * parseFloat(response.data.price)
+					self.totalSales = _.last(response.data.sales).value
+					self.totalRevenue = self.totalSales * response.data.price
 					return response.data
+				})
+			},
+
+			subscribe: function () {
+				if (!this.subscribed) this.groupSelector = true
+				else this.subunsub(false)
+			},
+
+			subunsub: function (selected) {
+				var self = this, type = (selected)? 'subscribe': 'unsubscribe'
+				$.post(apiUrl.concat(type), {item_id: self.item_id, group_id: selected.id}).then(function (response) {
+					if (response.error) {
+						alert(response.message)
+					}
+
+					if (type === 'subscribe') self.subscribed = true
+					else self.subscribed = false
 				})
 			}
 		},
 
 		ready: function () {
-			var self = this,
-			totalSales = _.last(self.sales).value,
-			ctx = document.querySelector('#chart').getContext('2d'), data = {
-				labels: [],
-				datasets: [{
-					label: "Sales",
-					fill: true,
-					lineTension: 0.1,
-					backgroundColor: "rgba(26, 188, 156, 0.4)",
-					borderColor: "rgba(26, 188, 156,1.0)",
-					borderCapStyle: 'butt',
-					borderDash: [],
-					borderDashOffset: 0.0,
-					borderJoinStyle: 'miter',
-					pointBorderColor: "rgba(22, 160, 133,1.0)",
-					pointBackgroundColor: "rgba(26, 188, 156,1.0)",
-					pointBorderWidth: 2,
-					pointHoverRadius: 5,
-					pointHoverBackgroundColor: "#ffffff",
-					pointHoverBorderColor: "rgba(22, 160, 133,1.0)",
-					pointHoverBorderWidth: 2,
-					pointRadius: 5,
-					pointHitRadius: 10,
-					data: []
-				}]
-			}
-
-			_.each(self.sales, function (item, index) {
-				data.labels.push(moment.unix(item.date).format("DD/MM/YYYY"))
-				data.datasets[0].data.push((item.value === 0)? item.value: totalSales - item.value)
-			})
-			
-			/* Get unique Value */
-			data.labels = _.uniq(data.labels)
-			data.datasets[0].data = _.uniq(data.datasets[0].data)
-
-			new Chart(ctx, {
-				type: 'line',
-				data: data
-			})
+			this.getMarketValue('today', this.item_id)
 		}
 	})
 };

@@ -8,6 +8,7 @@ import (
 	"time"
 	"net/http"
 	"reflect"
+	"strconv"
 )
 
 
@@ -38,24 +39,24 @@ func MarketValue (c echo.Context) error {
 		date := c.QueryParam("date")
 		now := time.Now()
 		end_date := int32(now.Unix())
-		year, _, _ := now.Date()
+		year, month, day := now.Date()
 
 		if date == "today" {
 			format_date = "02/01/2006 15:00 PM"
-			start_date = int32(now.AddDate(0, 0, -1).Unix())
+			start_date = int32(time.Date(year, month, day, 0, 0, 0, 0, time.UTC).Unix())
 		} else if date == "week" {
 			format_date = "02/01/2006"
-			start_date = int32(now.AddDate(0, 0, -8).Unix())
+			start_date = int32(now.AddDate(0, 0, -7).Unix())
 		} else if date == "month" {
 			format_date = "02/01/2006"
-			_, month, _ := now.AddDate(0, -1, 0).Date()
-			start_date = int32(time.Date(year, month, 1, 0, 0, 0, 0, time.UTC).Unix())
+			_, m, _ := now.AddDate(0, -1, 0).Date()
+			start_date = int32(time.Date(year, m, 1, 0, 0, 0, 0, time.UTC).Unix())
 		} else if date == "lastmonth" {
 			format_date = "02/01/2006"
-			_, month, _ := now.AddDate(0, -1, 0).Date()
-			start := time.Date(year, month, 1, 0, 0, 0, 0, time.UTC)
+			_, m, _ := now.AddDate(0, -1, 0).Date()
+			start := time.Date(year, m, 1, 0, 0, 0, 0, time.UTC)
 			start_date = int32(start.Unix())
-			end_date = int32(time.Date(year, month, start.Day(), 0, 0, 0, 0, time.UTC).Unix())
+			end_date = int32(time.Date(year, m, start.Day(), 0, 0, 0, 0, time.UTC).Unix())
 		} else if date == "year" {
 			format_date = "01/2006"
 			start_date = int32(time.Date(year, time.January, 1, 0, 0, 0, 0, time.UTC).Unix())
@@ -69,31 +70,63 @@ func MarketValue (c echo.Context) error {
 		// Pick MongoDB collection
 		collection := dbSession.DB("tarzan").C("item")
 
-		// Iterate all list
-		// db.item.aggregate([])
-		aggregate := collection.Pipe([]bson.M{
-			bson.M{
-				"$project": bson.M{
-					"sales": bson.M{
-						"$filter": bson.M{
-							"input": "$sales",
-							"as": "sales",
-							"cond": bson.M{
-								"$and": []bson.M{
-									bson.M{"$gte": []interface{}{"$$sales.date", start_date}},
-									bson.M{"$lte": []interface{}{"$$sales.date", end_date}},
-								},
-							},
-						},
+		// Build query
+		project_query := bson.M{}
+		match_query := bson.M{}
+
+		// Select basic field
+		project_query["price"] = 1
+		project_query["sales"] = bson.M{
+			"$filter": bson.M{
+				"input": "$sales",
+				"as": "sales",
+				"cond": bson.M{
+					"$and": []bson.M{
+						bson.M{"$gt": []interface{}{"$$sales.date", start_date}},
+						bson.M{"$lte": []interface{}{"$$sales.date", end_date}},
 					},
-					"price": 1,
 				},
 			},
-			bson.M{"$limit": 50000},
-		})
+		}
+
+		// If request contains category
+		category := c.QueryParam("category")
+		if category != "" {
+			match_query["category"] = bson.M{
+				"$regex": bson.RegEx{category, ""},
+			}
+			project_query["category"] = 1
+		}
+
+		// If request contains group
+		group_id := c.QueryParam("group")
+		if group_id != "" {
+			match_query["subscribe_group_id"] = bson.M{
+				"$in": []string{group_id},
+			}
+			project_query["subscribe_group_id"] = 1
+		}
+
+		// If request contains item_id
+		item_id, err := strconv.Atoi(c.QueryParam("item_id"))
+		if err == nil {
+			match_query["item_id"] = item_id
+			project_query["item_id"] = 1
+		}
+
+		match := bson.M{"$match": match_query}
+		project := bson.M{"$project": project_query}
+
+		log.Println("match", match)
+		log.Println("match", project)
+
+		// Iterate all list
+		// db.item.aggregate([])
+		aggregate := collection.Pipe([]bson.M{project, match, bson.M{"$limit": 50000}})
+
 
 		var result []MarketValueSeries
-		err := aggregate.Iter().All(&result)
+		err = aggregate.Iter().All(&result)
 
 		// Send response
 		if err == nil {
@@ -153,20 +186,6 @@ func MarketValue (c echo.Context) error {
 					}
 				}
 			}
-
-			/*_.each(data, function (item) {
-
-				// Get the same time of document,
-				// Prevent duplicate unixtime of timeline when scraping
-				_.each(item.sales, function (sales, index) {
-					var date = moment.unix(sales.date).format(dateFormat), salesValue = sales.value
-
-					if (index > 0) salesValue = salesValue - item.sales[index - 1].value
-					if (!marketValue[date]) marketValue[date] = {sales: 0, price: 0}
-					marketValue[date].sales += parseInt(salesValue)
-					marketValue[date].price += parseInt(item.price)
-				})
-			})*/
 
 			return c.JSON(http.StatusOK, map[string]interface{}{
 				"status": http.StatusOK,

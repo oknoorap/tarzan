@@ -41,7 +41,18 @@ func ItemGet (c echo.Context) error {
 
 		// Iterate all list
 		var result ItemView
-		err := collection.FindId(id).One(&result)
+		err := collection.FindId(id).Select(bson.M{
+			"author": true,
+			"category": true,
+			"created": true,
+			"item_id": true,
+			"price": true,
+			"sales": bson.M{"$slice": -1},
+			"subscribed": true,
+			"tags": true,
+			"title": true,
+			"url": true,
+		}).One(&result)
 
 		// Send response
 		if err == nil {

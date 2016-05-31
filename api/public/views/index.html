@@ -80,11 +80,11 @@
 		<div class="uk-width-1-1">
 			<h2>Market Value</h2>
 			<ul class="uk-subnav uk-subnav-pill">
-				<li :class="{'uk-active': tab.market === 'today'}"><a @click="viewMarketValue('today')">Today</a></li>
-				<li :class="{'uk-active': tab.market === 'week'}"><a @click="viewMarketValue('week')">Last 7 Days</a></li>
-				<li :class="{'uk-active': tab.market === 'month'}"><a @click="viewMarketValue('month')">This Month</a></li>
-				<li :class="{'uk-active': tab.market === 'lastmonth'}"><a @click="viewMarketValue('lastmonth')">Last Month</a></li>
-				<li :class="{'uk-active': tab.market === 'year'}"><a @click="viewMarketValue('year')">This Year</a></li>
+				<li :class="{'uk-active': tab['market-value'] === 'today'}"><a @click="viewMarketValue('market-value', 'today')">Today</a></li>
+				<li :class="{'uk-active': tab['market-value'] === 'week'}"><a @click="viewMarketValue('market-value', 'week')">Last 7 Days</a></li>
+				<li :class="{'uk-active': tab['market-value'] === 'month'}"><a @click="viewMarketValue('market-value', 'month')">This Month</a></li>
+				<li :class="{'uk-active': tab['market-value'] === 'lastmonth'}"><a @click="viewMarketValue('market-value', 'lastmonth')">Last Month</a></li>
+				<li :class="{'uk-active': tab['market-value'] === 'year'}"><a @click="viewMarketValue('market-value', 'year')">This Year</a></li>
 			</ul>
 
 			<div class="uk-grid uk-grid-collapse">
@@ -99,11 +99,11 @@
 		<div class="uk-width-1-1">
 			<h2>Best Selling</h2>
 			<ul class="uk-subnav uk-subnav-pill">
-				<li class="uk-active"><a href="#">Today</a></li>
-				<li><a href="#">Last 7 Days</a></li>
-				<li><a href="#">This Month</a></li>
-				<li><a href="#">Last Month</a></li>
-				<li><a href="#">This Year</a></li>
+				<li :class="{'uk-active': tab['categories-value'] === 'today'}"><a @click="viewMarketValue('categories-value', 'today')">Today</a></li>
+				<li :class="{'uk-active': tab['categories-value'] === 'week'}"><a @click="viewMarketValue('categories-value', 'week')">Last 7 Days</a></li>
+				<li :class="{'uk-active': tab['categories-value'] === 'month'}"><a @click="viewMarketValue('categories-value', 'month')">This Month</a></li>
+				<li :class="{'uk-active': tab['categories-value'] === 'lastmonth'}"><a @click="viewMarketValue('categories-value', 'lastmonth')">Last Month</a></li>
+				<li :class="{'uk-active': tab['categories-value'] === 'year'}"><a @click="viewMarketValue('categories-value', 'year')">This Year</a></li>
 			</ul>
 		</div>
 	</section>
@@ -114,11 +114,11 @@
 			<div class="uk-grid uk-grid-collapse">
 				<div class="uk-width-6-10">
 					<ul class="uk-subnav uk-subnav-pill">
-						<li class="uk-active"><a href="#">Today</a></li>
-						<li><a href="#">Last 7 Days</a></li>
-						<li><a href="#">This Month</a></li>
-						<li><a href="#">Last Month</a></li>
-						<li><a href="#">This Year</a></li>
+						<li :class="{'uk-active': tab['categories-value'] === 'today'}"><a @click="viewMarketValue('categories-value', 'today')">Today</a></li>
+						<li :class="{'uk-active': tab['categories-value'] === 'week'}"><a @click="viewMarketValue('categories-value', 'week')">Last 7 Days</a></li>
+						<li :class="{'uk-active': tab['categories-value'] === 'month'}"><a @click="viewMarketValue('categories-value', 'month')">This Month</a></li>
+						<li :class="{'uk-active': tab['categories-value'] === 'lastmonth'}"><a @click="viewMarketValue('categories-value', 'lastmonth')">Last Month</a></li>
+						<li :class="{'uk-active': tab['categories-value'] === 'year'}"><a @click="viewMarketValue('categories-value', 'year')">This Year</a></li>
 					</ul>
 				</div>
 				<div class="uk-width-4-10 uk-form">
@@ -126,6 +126,12 @@
 						<option value="">Select Category</option>
 						<option v-for="category in categories" :value="category">${category}</option>
 					</select>
+				</div>
+			</div>
+
+			<div class="uk-grid uk-grid-collapse">
+				<div class="uk-width-1-1">
+					<canvas id="categories-value" height="80"></canvas>
 				</div>
 			</div>
 		</div>
@@ -137,11 +143,11 @@
 			<div class="uk-grid uk-grid-collapse">
 				<div class="uk-width-6-10">
 					<ul class="uk-subnav uk-subnav-pill">
-						<li class="uk-active"><a href="#">Today</a></li>
-						<li><a href="#">Last 7 Days</a></li>
-						<li><a href="#">This Month</a></li>
-						<li><a href="#">Last Month</a></li>
-						<li><a href="#">This Year</a></li>
+						<li :class="{'uk-active': tab['group-value'] === 'today'}"><a @click="viewMarketValue('group-value', 'today')">Today</a></li>
+						<li :class="{'uk-active': tab['group-value'] === 'week'}"><a @click="viewMarketValue('group-value', 'week')">Last 7 Days</a></li>
+						<li :class="{'uk-active': tab['group-value'] === 'month'}"><a @click="viewMarketValue('group-value', 'month')">This Month</a></li>
+						<li :class="{'uk-active': tab['group-value'] === 'lastmonth'}"><a @click="viewMarketValue('group-value', 'lastmonth')">Last Month</a></li>
+						<li :class="{'uk-active': tab['group-value'] === 'year'}"><a @click="viewMarketValue('group-value', 'year')">This Year</a></li>
 					</ul>
 				</div>
 				<div class="uk-width-4-10 uk-form">
@@ -149,6 +155,12 @@
 						<option value="">Select Group</option>
 						<option v-for="group in groups" :value="group.id">${group.name}</option>
 					</select>
+				</div>
+			</div>
+
+			<div class="uk-grid uk-grid-collapse">
+				<div class="uk-width-1-1">
+					<canvas id="group-value" height="80"></canvas>
 				</div>
 			</div>
 		</div>
@@ -312,22 +324,23 @@
 </script>
 
 <script type="text/template" id="item-view">
+<group-selector :show.sync="groupSelector" :done="subunsub"></group-selector>
 <wrapper icon="file-o" :title="(title)? title + ' by ' + author: 'Loading...'">
 	<div class="uk-grid">
 		<div class="uk-width-1-1">
 			<ul class="uk-subnav uk-subnav-pill uk-flex-center">
-				<li class="uk-active"><a href="#">Today</a></li>
-				<li><a href="#">Last 7 Days</a></li>
-				<li><a href="#">This Month</a></li>
-				<li><a href="#">Last Month</a></li>
-				<li><a href="#">This Year</a></li>
+				<li :class="{'uk-active': tab === 'today'}"><a @click="viewMarketValue('today')">Today</a></li>
+				<li :class="{'uk-active': tab === 'week'}"><a @click="viewMarketValue('week')">Last 7 Days</a></li>
+				<li :class="{'uk-active': tab === 'month'}"><a @click="viewMarketValue('month')">This Month</a></li>
+				<li :class="{'uk-active': tab === 'lastmonth'}"><a @click="viewMarketValue('lastmonth')">Last Month</a></li>
+				<li :class="{'uk-active': tab === 'year'}"><a @click="viewMarketValue('year')">This Year</a></li>
 			</ul>
 		</div>
 	</div>
 
 	<div class="uk-grid">
 		<div class="uk-width-1-1">
-			<canvas id="chart" height="80"></canvas>
+			<canvas id="item-chart" height="80"></canvas>
 		</div>
 	</div>
 
@@ -356,7 +369,7 @@
 
 	<div class="uk-grid uk-grid-large">
 		<div class="uk-width-3-6">
-			<a class="uk-button uk-button-large"><i class="uk-icon-star"></i> Subscribe</a>
+			<a class="uk-button uk-button-large" :class="{'uk-button-warning': subscribed}" @click="subscribe()"><i class="uk-icon-star"></i> <span v-if="subscribed">Unsubscribe</span><span v-else>Subscribe</span></a>
 		</div>
 		<div class="uk-width-3-6">
 			Item Page: <a href="${url}" target="_blank">Visit URL <i class="uk-icon-external-link"></i></a><br />

@@ -222,3 +222,17 @@ hr {
 #dashboard section {
 	margin-bottom: 40px;
 }
+
+.uk-button-warning {
+	background-color: #f39c12;
+	color: #ffffff;
+	text-shadow: 0 1px 1px rgba(0,0,0,0.5);
+}
+.uk-button-warning:hover {
+	background-color: #f39c12;
+	color: #ffffff;
+}
+
+.uk-button-warning .uk-icon-star {
+	color: #ffffff;
+}
