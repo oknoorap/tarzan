@@ -36,7 +36,7 @@ func MarketValue (c echo.Context) error {
 			format_date string
 		)
 
-		loc, _ := time.LoadLocation("Australia/Melbourne")
+		loc, _ := time.LoadLocation("Australia/Sydney")
 		date := c.QueryParam("date")
 		now := time.Now().In(time.Local)
 		end_date := int32(now.Unix())
@@ -142,9 +142,10 @@ func MarketValue (c echo.Context) error {
 				}
 
 				for index, sales := range itemSales {
-					log.Println(sales.Date)
 					dateIndex := time.Unix(int64(sales.Date), 0).In(loc).Format(format_date)
+					dateIndex2 := time.Unix(int64(sales.Date), 0).In(time.Local).Format(format_date)
 					salesValue := sales.Value
+					log.Println(sales.Date, dateIndex, dateIndex2, sales.Value)
 
 					if data[dateIndex] == nil {
 						data[dateIndex] = map[string]interface{}{
