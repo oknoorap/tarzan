@@ -38,29 +38,29 @@ func MarketValue (c echo.Context) error {
 
 		loc, _ := time.LoadLocation("Australia/Melbourne")
 		date := c.QueryParam("date")
-		now := time.Now()
+		now := time.Now().In(time.Local)
 		end_date := int32(now.Unix())
 		year, month, day := now.Date()
 
 		if date == "today" {
 			format_date = "02/01/2006 15:00 PM"
-			start_date = int32(time.Date(year, month, day, 0, 0, 0, 0, time.UTC).Unix())
+			start_date = int32(time.Date(year, month, day, 0, 0, 0, 0, time.Local).Unix())
 		} else if date == "week" {
 			format_date = "02/01/2006"
 			start_date = int32(now.AddDate(0, 0, -7).Unix())
 		} else if date == "month" {
 			format_date = "02/01/2006"
 			_, m, _ := now.AddDate(0, -1, 0).Date()
-			start_date = int32(time.Date(year, m, 1, 0, 0, 0, 0, time.UTC).Unix())
+			start_date = int32(time.Date(year, m, 1, 0, 0, 0, 0, time.Local).Unix())
 		} else if date == "lastmonth" {
 			format_date = "02/01/2006"
 			_, m, _ := now.AddDate(0, -1, 0).Date()
 			start := time.Date(year, m, 1, 0, 0, 0, 0, time.UTC)
 			start_date = int32(start.Unix())
-			end_date = int32(time.Date(year, m, start.Day(), 0, 0, 0, 0, time.UTC).Unix())
+			end_date = int32(time.Date(year, m, start.Day(), 0, 0, 0, 0, time.Local).Unix())
 		} else if date == "year" {
 			format_date = "01/2006"
-			start_date = int32(time.Date(year, time.January, 1, 0, 0, 0, 0, time.UTC).Unix())
+			start_date = int32(time.Date(year, time.January, 1, 0, 0, 0, 0, time.Local).Unix())
 		}
 
 		// Set Mgo Session
