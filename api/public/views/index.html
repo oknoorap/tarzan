@@ -369,10 +369,14 @@
 
 	<div class="uk-grid uk-grid-large">
 		<div class="uk-width-3-6">
-			<a class="uk-button uk-button-large" :class="{'uk-button-warning': subscribed}" @click="subscribe()"><i class="uk-icon-star"></i> <span v-if="subscribed">Unsubscribe</span><span v-else>Subscribe</span></a>
+			<div class="uk-flex uk-flex-column uk-flex-center uk-flex-middle uk-height-1-1" style="height:200px" :style="{backgroundImage: 'url('+ img +')'}">
+				<div class="item-img-preview uk-flex uk-flex-column uk-flex-center uk-flex-middle">
+					<a class="uk-button uk-button-large uk-button-primary" :class="{'uk-button-warning': subscribed}" @click="subscribe()"><i class="uk-icon-star"></i> <span v-if="subscribed">Unsubscribe</span><span v-else>Subscribe</span></a>
+					<a href="${url}" target="_blank">Visit URL <i class="uk-icon-external-link"></i></a>
+				</div>
+			</div>
 		</div>
 		<div class="uk-width-3-6">
-			Item Page: <a href="${url}" target="_blank">Visit URL <i class="uk-icon-external-link"></i></a><br />
 			Author Page: <a href="http://themeforest.net/user/${author}/portfolio" target="_blank">Visit URL <i class="uk-icon-external-link"></i></a><br />
 			Date Created: ${created}<br />
 			Category: ${category}<br />

@@ -21,3 +21,17 @@ func dialRedis() (*redis.Client, error) {
 	_, err := client.Ping().Result()
 	return client, err
 }
+
+func getItemId (uri string) (output int) {
+	output = 0
+
+	if parsedUri, err := url.Parse(uri); err == nil {
+		pathSlice := strings.Split(parsedUri.Path, "/")
+		lastSlice := pathSlice[len(pathSlice)-1]
+		if itemId, err := strconv.Atoi(lastSlice); err == nil {
+			output = itemId
+		}
+	}
+
+	return output
+}

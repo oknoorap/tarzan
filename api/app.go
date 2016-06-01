@@ -67,6 +67,7 @@ func main () {
 
 	// Misc method
 	e.GET(apiVersion + "/list/category", api.CategoryList)
+	e.GET(apiVersion + "/getPreview", api.GetPreview)
 	e.POST(apiVersion + "/search", api.Search)
 
 	// Configure template engine

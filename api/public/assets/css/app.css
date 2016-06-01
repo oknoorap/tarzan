@@ -236,3 +236,16 @@ hr {
 .uk-button-warning .uk-icon-star {
 	color: #ffffff;
 }
+
+.item-img-preview {
+	background-color: rgba(0,0,0,0.6);
+    flex-grow: 1;
+    width: 100%;
+}
+.item-img-preview .uk-button {
+	margin-bottom: 10px;
+}
+
+.item-img-preview a {
+	color: #ffffff;
+}

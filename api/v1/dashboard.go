@@ -117,9 +117,6 @@ func MarketValue (c echo.Context) error {
 		match := bson.M{"$match": match_query}
 		project := bson.M{"$project": project_query}
 
-		log.Println("match", match)
-		log.Println("match", project)
-
 		// Iterate all list
 		// db.item.aggregate([])
 		aggregate := collection.Pipe([]bson.M{project, match, bson.M{"$limit": 50000}})

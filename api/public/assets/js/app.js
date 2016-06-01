@@ -719,6 +719,19 @@ App.item = {
 				this.tab = date
 			},
 
+			getImgPreview: function () {
+				var self = this
+				$.getJSON(apiUrl.concat('getPreview'), {uri: self.url})
+				.then(function (response) {
+					if (response.error) {
+						alert(response.message);
+						return
+					}
+
+					self.$set('img', response.img.url)
+				})
+			},
+
 			fetch: function () {
 				var self = this
 				return $.getJSON(apiUrl.concat('item/', this.$route.params.id)).then(function (response) {
@@ -753,6 +766,7 @@ App.item = {
 
 		ready: function () {
 			this.getMarketValue('today', this.item_id)
+			this.getImgPreview()
 		}
 	})
 };

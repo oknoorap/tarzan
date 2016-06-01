@@ -190,18 +190,3 @@ func GetItem (queue string, args ...interface{}) error {
 
 	return nil
 }
-
-
-func getItemId (uri string) (output int) {
-	output = 0
-
-	if parsedUri, err := url.Parse(uri); err == nil {
-		pathSlice := strings.Split(parsedUri.Path, "/")
-		lastSlice := pathSlice[len(pathSlice)-1]
-		if itemId, err := strconv.Atoi(lastSlice); err == nil {
-			output = itemId
-		}
-	}
-
-	return output
-}
