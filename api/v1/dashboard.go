@@ -142,6 +142,7 @@ func MarketValue (c echo.Context) error {
 				}
 
 				for index, sales := range itemSales {
+					log.Println(sales.Date)
 					dateIndex := time.Unix(int64(sales.Date), 0).In(loc).Format(format_date)
 					salesValue := sales.Value
 
