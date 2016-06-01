@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"./../../workers/request"
+	"../request"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/labstack/echo"
 	"gopkg.in/mgo.v2"
