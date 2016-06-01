@@ -645,7 +645,8 @@ App.item = {
 				totalRevenue: 0,
 				totalSales: 0,
 				canvas: {},
-				groupSelector: false
+				groupSelector: false,
+				style: {}
 			}
 		},
 		methods: {
@@ -728,7 +729,10 @@ App.item = {
 						return
 					}
 
-					self.$set('img', response.img.url)
+
+					self.$set('style', {
+						backgroundImage: 'url('+ response.img.url +')'
+					})
 				})
 			},
 
@@ -741,7 +745,7 @@ App.item = {
 					}
 
 					self.totalSales = _.last(response.data.sales).value
-					self.totalRevenue = self.totalSales * response.data.price
+					self.totalRevenue = (self.totalSales * response.data.price).toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, '$1,')
 					return response.data
 				})
 			},

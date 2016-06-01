@@ -367,19 +367,20 @@
 	</div>
 	<hr />
 
-	<div class="uk-grid uk-grid-large">
-		<div class="uk-width-3-6">
-			<div class="uk-flex uk-flex-column uk-flex-center uk-flex-middle uk-height-1-1" style="height:200px" :style="{backgroundImage: 'url('+ img +')'}">
-				<div class="item-img-preview uk-flex uk-flex-column uk-flex-center uk-flex-middle">
-					<a class="uk-button uk-button-large uk-button-primary" :class="{'uk-button-warning': subscribed}" @click="subscribe()"><i class="uk-icon-star"></i> <span v-if="subscribed">Unsubscribe</span><span v-else>Subscribe</span></a>
-					<a href="${url}" target="_blank">Visit URL <i class="uk-icon-external-link"></i></a>
-				</div>
+	<div class="uk-grid">
+		<div class="uk-container-center uk-width-4-10">
+			<div class="item-banner" :style="style"></div>
+
+			<div class="uk-align-center" style="text-align: center">
+				<a class="uk-button uk-button-large uk-button-primary" :class="{'uk-button-warning': subscribed}" @click="subscribe()"><i class="uk-icon-star"></i> <span v-if="subscribed">Unsubscribe</span><span v-else>Subscribe</span></a>
+				<a href="${url}" class="uk-button uk-button-large" target="_blank"><i class="uk-icon-external-link"></i> Item's URL</a>
+				<a href="http://themeforest.net/user/${author}/portfolio" class="uk-button uk-button-large" target="_blank"><i class="uk-icon-user"></i> Author URL</a>
 			</div>
-		</div>
-		<div class="uk-width-3-6">
-			Author Page: <a href="http://themeforest.net/user/${author}/portfolio" target="_blank">Visit URL <i class="uk-icon-external-link"></i></a><br />
-			Date Created: ${created}<br />
-			Category: ${category}<br />
+
+			<div style="text-align:center">
+				Date Created: ${created}<br />
+				Category: ${category}
+			</div>
 
 			<div class="tag-wrapper">
 				<h3>Tags</h3>
@@ -543,7 +544,7 @@
 					</select>
 				</div>
 				<div class="uk-width-1-10" v-if="filter.field !== 'category'">
-					<input v-model="filter.value" class="uk-width-1-1">
+					<input v-model="filter.value" class="uk-width-1-1" @keyup.enter="search()">
 				</div>
 				<div class="uk-width-1-10">
 					<a @click="remove(filter, $index)"><i class="uk-close"></i></a>

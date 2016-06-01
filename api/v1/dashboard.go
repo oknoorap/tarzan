@@ -36,6 +36,7 @@ func MarketValue (c echo.Context) error {
 			format_date string
 		)
 
+		loc, _ := time.LoadLocation("Australia/Melbourne")
 		date := c.QueryParam("date")
 		now := time.Now()
 		end_date := int32(now.Unix())
@@ -134,14 +135,15 @@ func MarketValue (c echo.Context) error {
 				itemSales := item.Sales
 				itemPrice := item.Price
 				priceMarket := make(map[string]interface{})
+				lastSales := int32(0)
+
+				if len(itemSales) > 0 {
+					lastSales = itemSales[len(itemSales)-1].Value
+				}
 
 				for index, sales := range itemSales {
-					dateIndex := time.Unix(int64(sales.Date), 0).Format(format_date)
+					dateIndex := time.Unix(int64(sales.Date), 0).In(loc).Format(format_date)
 					salesValue := sales.Value
-					
-					if index > 0 {
-						salesValue = salesValue - itemSales[index - 1].Value
-					}
 
 					if data[dateIndex] == nil {
 						data[dateIndex] = map[string]interface{}{
@@ -152,6 +154,11 @@ func MarketValue (c echo.Context) error {
 
 					date := reflect.ValueOf(data[dateIndex])
 					if date.IsValid() {
+						if index > 0 {
+							salesValue = salesValue - itemSales[index - 1].Value
+						} else {
+							salesValue = lastSales - salesValue
+						}
 						sumSales := salesValue + int32(date.MapIndex(reflect.ValueOf("sales")).Elem().Int())
 						date.SetMapIndex(reflect.ValueOf("sales"), reflect.ValueOf(sumSales))
 					}

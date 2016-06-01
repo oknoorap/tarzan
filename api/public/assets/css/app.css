@@ -249,3 +249,11 @@ hr {
 .item-img-preview a {
 	color: #ffffff;
 }
+
+.item-banner {
+	height:330px;
+	background-position:50% 50%;
+	background-repeat:no-repeat;
+	background-size: 100% 100%;
+	margin-bottom: 20px;
+}
