@@ -257,3 +257,15 @@ hr {
 	background-size: 100% 100%;
 	margin-bottom: 20px;
 }
+
+.item-subscribe-list {
+	margin-bottom: 20px;
+}
+
+.item-subscribe-list h3 {
+	margin: 0;
+}
+.item-subscribe-list span {
+	font-size: 14px;
+	font-style: italic;
+}

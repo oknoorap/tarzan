@@ -318,11 +318,20 @@ func GroupList (c echo.Context) error {
 		dbSession := db.Copy()
 		defer dbSession.Close()
 
+		// Query Fields
+		query := bson.M{}
+
+		// Get Category ID
+		cat_id := c.QueryParam("cat_id")
+		if cat_id != "" {
+			query["_id"] = bson.ObjectIdHex(cat_id)
+		}
+
 		// Pick MongoDB collection
 		collection := dbSession.DB("tarzan").C("group")
 
 		// Iterate all list
-		iterate := collection.Find(nil).Select(bson.M{
+		iterate := collection.Find(query).Select(bson.M{
 			"_id": true,
 			"name": true,
 			"desc": true,
@@ -345,7 +354,46 @@ func GroupList (c echo.Context) error {
 
 
 func SubscribeList (c echo.Context) error {
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"status": http.StatusOK,
-	})
+	// Set default response to error
+	defaultResponse := Error{
+		Error: true,
+		Message: "Unknown Error",
+	}
+
+	// Connect to mongodb
+	db, err := connectDb()
+
+	if err != nil {
+
+		log.Fatalf("CreateSession: %s\n", err)
+		defaultResponse.Message = "Can't connect db"
+
+	} else {
+
+		// Set Mgo Session
+		db.SetMode(mgo.Monotonic, true)
+		dbSession := db.Copy()
+		defer dbSession.Close()
+
+		// Pick MongoDB collection
+		collection := dbSession.DB("tarzan").C("item")
+
+		// Iterate all list
+		iterate := collection.Find(bson.M{
+			"subscribed": true,
+		}).Limit(100).Iter()
+
+		var result []ItemSubscribe
+		err := iterate.All(&result)
+
+		// Send response
+		if err == nil {
+			return c.JSON(http.StatusOK, map[string]interface{}{
+				"status": http.StatusOK,
+				"list": result,
+			})
+		}
+	}
+
+	return c.JSON(http.StatusOK, defaultResponse)
 }

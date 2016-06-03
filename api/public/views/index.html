@@ -407,6 +407,32 @@
 
 <script type="text/template" id="subscribe-list">
 	<subscribe-wrapper>
+		<div class="item-subscribe-list" v-for="group in list" v-if="group.items.length>0">
+			<h3>${group.name} - <span>${group.desc}</span></h3>
+
+			<table class="uk-table uk-table-hover uk-table-striped uk-table-condensed">
+				<thead>
+					<tr>
+						<th style="width:15px"><input type="checkbox" @click="checkAll()" v-model="allChecked"></th>
+						<th style="width:100px">Item ID</th>
+						<th>Title</th>
+						<th style="width:50px">Sales</th>
+					<tr>
+				</thead>
+				<tbody>
+					<tbody>
+						<tr v-for="item in group.items|filterBy search">
+							<td><input type="checkbox" v-model="checkedList" :value="item.item_id"></td>
+							<td>${item.item_id}</td>
+							<td>
+								<a v-link="{path: '/item/' + item.id}" class="item-title">${item.title}</a>
+								<span class="item-created"><i class="uk-icon-calendar"></i> ${item.created}</span> <a href="http://themeforest.net/user/${item.author}/portfolio" class="item-author" target="_blank"><i class="uk-icon-user"></i> ${item.author}</a> - <a href="${item.url}" class="url" target="_blank">Visit Page <i class="uk-icon-external-link"></i></a>
+							</td>
+							<td>${item.sales[0].value}</td>
+						</tr>
+					</tbody>
+			</table>
+		</div>
 	</subscribe-wrapper>
 </script>
 

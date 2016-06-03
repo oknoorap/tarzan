@@ -14,6 +14,17 @@ function renderDate (date) {
 	return date[2].concat('/', date[1], '/', date[0])
 }
 
+function orderDate (data) {
+	var timeline = {};
+	Object.keys(data).sort(function(a, b){
+		return moment(a, 'DD/MM/YYYY').toDate() - moment(b, 'DD/MM/YYYY').toDate()
+	}).forEach(function(key) {
+		timeline[key] = data[key]
+	});
+
+	return timeline
+}
+
 /**
  * Application
  * @type {Object}
@@ -139,7 +150,7 @@ App.dashboard = Vue.extend({
 				if (response.error) { alert(response.message); return }
 
 				// Push actual data to chart
-				_.each(response.data, function (item, date) {
+				_.each(orderDate(response.data), function (item, date) {
 					canvas.data.labels.push(date)
 					canvas.data.datasets[0].data.push(item.sales * item.price)
 				})
@@ -689,7 +700,7 @@ App.item = {
 					if (response.error) { alert(response.message); return }
 
 					// Push actual data to chart
-					_.each(response.data, function (item, date) {
+					_.each(orderDate(response.data), function (item, date) {
 						self.canvas.data.labels.push(date)
 						self.canvas.data.datasets[0].data.push(item.sales * item.price)
 						self.canvas.data.datasets[0].sales.push(item.sales)
@@ -728,7 +739,6 @@ App.item = {
 						alert(response.message);
 						return
 					}
-
 
 					self.$set('style', {
 						backgroundImage: 'url('+ response.img.url +')'
@@ -789,7 +799,39 @@ App.subscribe.wrapper = Vue.extend({
 
 App.subscribe.list = Vue.extend({
 	template: '#subscribe-list',
-	components: {wrapper: App.wrapper, 'subscribe-wrapper': App.subscribe.wrapper}
+	components: {wrapper: App.wrapper, 'subscribe-wrapper': App.subscribe.wrapper},
+	route: {
+		canReuse: false,
+		waitForData: true,
+		data: function () {
+			return this.fetch()
+		},
+	},
+	methods: {
+		fetch: function () {
+			return $.getJSON('http://localhost:8080/api/v1/list/subscribe/group', function (response) {
+				if (response.error) { alert(response.message); return }
+
+				var groups = {}
+				_.each(response.list, function (item, index) {
+					groups[item.id] = item
+					groups[item.id].items = []
+				})
+
+				$.getJSON('http://localhost:8080/api/v1/list/subscribe', function (response) {
+					if (response.error) { alert(response.message); return }
+
+					_.each(response.list, function (item, index) {
+						_.each(item.subscribe_group_id, function (_item, _index) {
+							groups[_item].items.push(item)
+						})
+					})
+				})
+
+				return groups
+			})
+		}
+	}
 });
 
 App.subscribe.groupList = Vue.extend({
@@ -1004,7 +1046,7 @@ App.search = Vue.extend({
 		},
 
 		search: function () {
-			let self = this
+			var self = this
 			self.waiting = true
 			self.currentTab = 'result'
 
@@ -1161,7 +1203,6 @@ App.search = Vue.extend({
 
 				// Done
 			], function (err, params) {
-				//console.log(params)
 				self.params = params
 				self.fetch(0)
 			})
