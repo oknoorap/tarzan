@@ -71,9 +71,15 @@ type (
 		Value int32 `json:"value"`
 	}
 
+	Sales struct {
+		Sales int32   `json:"sales"`
+		Price float32 `json:"price"`
+		Date  string  `json:"date"`
+	}
+
 	SalesSeries struct {
 		Sales []ItemSales `json:"sales"`
-		Price float32 `json:"price"`
+		Price float32     `json:"price"`
 	}
 
 	Group struct {

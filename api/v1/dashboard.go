@@ -7,7 +7,6 @@ import (
 	"log"
 	"time"
 	"net/http"
-	"reflect"
 	"strconv"
 )
 
@@ -36,8 +35,9 @@ func MarketValue (c echo.Context) error {
 			format_date string
 		)
 
-		tf_timezone, _ := time.LoadLocation("Australia/Melbourne")
-		local, _ := time.LoadLocation("America/New_York")
+		tf_timezone_str := "Australia/Melbourne"
+		local_str := "America/New_York"
+		local, _ := time.LoadLocation(local_str)
 		date := c.QueryParam("date")
 		now := time.Now().In(time.Local)
 		end_date := int32(now.Unix())
@@ -157,7 +157,7 @@ func MarketValue (c echo.Context) error {
 		// Iterate all list
 		// db.item.aggregate([])
 		aggregate := collection.Pipe([]bson.M{project, match, sort, bson.M{"$limit": limit}})
-		data := make(map[string]interface{})
+		var data []map[string]interface{}
 
 		if bestselling == "" {
 			var result []SalesSeries
@@ -165,105 +165,21 @@ func MarketValue (c echo.Context) error {
 
 			if err == nil {
 				for _, item := range result {
-					itemData := []map[string]interface{}{}
-					itemDataOf := reflect.ValueOf(itemData)
-					itemSales := item.Sales
-					itemPrice := item.Price
-					priceMarket := make(map[string]interface{})
-
-					for _, sales := range itemSales {
-						dateIndex := time.Unix(int64(sales.Date), 0).In(tf_timezone).Format(format_date)
-						if data[dateIndex] == nil {
-							data[dateIndex] = map[string]interface{}{
-								"sales": int32(0),
-								"price": float32(0),
-							}
-						}
-
-						var itemDataFound reflect.Value
-						itemDataOf = reflect.ValueOf(itemData)
-						itemExists := false
-						for i := 0; i < itemDataOf.Len(); i++ {
-							currentItem := itemDataOf.Index(i)
-							itemDate := currentItem.MapIndex(reflect.ValueOf("date")).Elem().String()
-							if itemDate == dateIndex {
-								itemExists = true
-								itemDataFound = currentItem
-							}
-						}
-
-						if itemExists {
-							itemDataFound.SetMapIndex(reflect.ValueOf("sales"), reflect.ValueOf(sales.Value))
-						} else {
-							itemData = append(itemData, map[string]interface{}{
-								"sales": sales.Value,
-								"date":  dateIndex,
-							})
-						}
-
-
-						priceMarket[dateIndex] = itemPrice
-					}
-
-					for i := 0; i < itemDataOf.Len(); i++ {
-						if i > 0 {
-							currentItem := itemDataOf.Index(i)
-							currentSales := currentItem.MapIndex(reflect.ValueOf("sales")).Elem().Int()
-							currentDate := currentItem.MapIndex(reflect.ValueOf("date")).Elem().String()
-
-							previousItem := itemDataOf.Index(i - 1)
-							previousSales := previousItem.MapIndex(reflect.ValueOf("sales")).Elem().Int()
-							
-							sumSales := currentSales - previousSales
-
-							abc := reflect.ValueOf(data[currentDate])
-							datasales := abc.MapIndex(reflect.ValueOf("sales")).Elem().Int()
-							sum := datasales + sumSales
-							abc.SetMapIndex(reflect.ValueOf("sales"), reflect.ValueOf(sum))
-						}
-					}
-
-					/*itemValue := reflect.ValueOf(itemData)
-					for i := 0; i < itemValue.Len(); i++ {
-						if i > 0 {
-							currentSales := itemValue.Index(i).MapIndex(reflect.ValueOf("sales")).Int()
-							previousSales := itemValue.Index(i - 1).MapIndex(reflect.ValueOf("sales")).Int()
-							sumSales := currentSales - previousSales
-							itemValue.SetMapIndex(reflect.ValueOf("sales"), reflect.ValueOf(sumSales))
-						}
-					}*/
-
-					//log.Println(itemData)
-
-					for date, price := range priceMarket {
-						marketInDate := reflect.ValueOf(data[date])
-						if marketInDate.IsValid() {
-							priceVal := float32(reflect.ValueOf(price).Float())
-							es := marketInDate.MapIndex(reflect.ValueOf("price"))
-							if es.IsValid() {
-								var abc float32
-								if es.Elem().Kind().String() == "int" {
-									abc = float32(es.Elem().Int())
-								} else {
-									abc = float32(es.Elem().Float())
-								}
-
-								sumPrice := priceVal + abc
-								marketInDate.SetMapIndex(reflect.ValueOf("price"), reflect.ValueOf(sumPrice))
-							}
-						}
-					}
+					series := get_sales_from_series(item, tf_timezone_str, format_date)
+					data = append(data, series)
 				}
+
+				counted_data := sum_sales(data)
 
 				return c.JSON(http.StatusOK, map[string]interface{}{
 					"status": http.StatusOK,
-					"data": data,
+					"data": counted_data,
 				})
 			} else {
 				defaultResponse.Message = err.Error()
 			}
 		} else {
-			var result []map[string]interface{}
+			/*var result []map[string]interface{}
 			err = aggregate.Iter().All(&result)
 			log.Println(result)
 
@@ -295,7 +211,7 @@ func MarketValue (c echo.Context) error {
 			} else {
 				defaultResponse.Message = err.Error()
 			}
-			defaultResponse.Message = "hahahhahaha"
+			defaultResponse.Message = "hahahhahaha"*/
 		}
 
 		
