@@ -265,7 +265,9 @@ func MarketValue (c echo.Context) error {
 				}
 				for _, key := range sort_slice {
 					for _, val := range sort_total[key] {
-						new_data[val] = data[val]
+						if reflect.ValueOf(new_data).Len() < 15 {
+							new_data[val] = data[val]
+						}
 					}
 				}
 
