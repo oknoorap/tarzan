@@ -6,6 +6,8 @@ import (
 	"gopkg.in/mgo.v2/bson"
 	"log"
 	"time"
+	sorting "sort"
+	"reflect"
 	"net/http"
 	"strconv"
 )
@@ -48,11 +50,11 @@ func MarketValue (c echo.Context) error {
 			start_date = int32(time.Date(year, month, day, 0, 0, 0, 0, local).Unix())
 		} else if date == "week" {
 			format_date = "02/01/2006"
-			start_date = int32(now.AddDate(0, 0, -7).Unix())
+			start_date = int32(now.AddDate(0, 0, -8).Unix())
 		} else if date == "month" {
 			format_date = "02/01/2006"
 			_, m, _ := now.AddDate(0, -1, 0).Date()
-			start_date = int32(time.Date(year, m, 1, 0, 0, 0, 0, local).Unix())
+			start_date = int32(time.Date(year, m, 1, -1, 0, 0, 0, local).Unix())
 		} else if date == "lastmonth" {
 			format_date = "02/01/2006"
 			_, m, _ := now.AddDate(0, -1, 0).Date()
@@ -122,11 +124,13 @@ func MarketValue (c echo.Context) error {
 		bestselling := c.QueryParam("bestselling")
 		sort := bson.M{"$sort": bson.M{"created": 1}}
 		if bestselling != "" {
-			limit = 10
+			project_query["_id"] = 1
 			project_query["title"] = 1
 			project_query["item_id"] = 1
 			project_query["subscribed"] = 1
-			sort = bson.M{
+			project_query["url"] = 1
+			project_query["img_preview"] = 1
+			/*sort = bson.M{
 				"$sort": bson.M{"sales": -1},
 			}
 
@@ -147,7 +151,7 @@ func MarketValue (c echo.Context) error {
 					},
 					-1,
 				},
-			}
+			}*/
 		}
 
 
@@ -157,64 +161,122 @@ func MarketValue (c echo.Context) error {
 		// Iterate all list
 		// db.item.aggregate([])
 		aggregate := collection.Pipe([]bson.M{project, match, sort, bson.M{"$limit": limit}})
-		var data []map[string]interface{}
 
 		if bestselling == "" {
 			var result []SalesSeries
+			var data []map[string]interface{}
 			err = aggregate.Iter().All(&result)
 
 			if err == nil {
+
+				// Get sales series from items
 				for _, item := range result {
 					series := get_sales_from_series(item, tf_timezone_str, format_date)
 					data = append(data, series)
 				}
 
+				// Sum all sales
 				counted_data := sum_sales(data)
 
-				return c.JSON(http.StatusOK, map[string]interface{}{
-					"status": http.StatusOK,
-					"data": counted_data,
-				})
+				return c.JSON(http.StatusOK, ResponseOK{http.StatusOK, counted_data})
 			} else {
 				defaultResponse.Message = err.Error()
 			}
+
 		} else {
-			/*var result []map[string]interface{}
+			var result []map[string]interface{}
+			data := make(map[string]interface{})
 			err = aggregate.Iter().All(&result)
-			log.Println(result)
 
 			if err == nil {
-				for _, value := range result {
-					valueOf := reflect.ValueOf(value)
-					item_id := strconv.Itoa(int(valueOf.MapIndex(reflect.ValueOf("item_id")).Elem().Int()))
-					title := valueOf.MapIndex(reflect.ValueOf("title")).Elem().String()
 
-					var priceval float32
-					price := valueOf.MapIndex(reflect.ValueOf("price"))
-					if price.IsValid() {
-						if price.Elem().Kind().String() == "int" {
-							priceval = float32(price.Elem().Int())
+				for _, item := range result {
+					var price_value float32
+					price_reflector := reflect.ValueOf(item["price"])
+					if price_reflector.Kind().String() == "float64" {
+						price_value = float32(price_reflector.Float())
+					} else {
+						price_value = float32(price_reflector.Int())
+					}
+
+					var item_sales []ItemSales
+					sales_collection := reflect.ValueOf(item["sales"])
+					for i := 0; i < sales_collection.Len(); i++ {
+						var sales_date int32
+						sales_date_reflector := sales_collection.Index(i).Elem().MapIndex(reflect.ValueOf("date"))
+						if sales_date_reflector.Elem().Kind().String() == "int" {
+							sales_date = int32(sales_date_reflector.Elem().Int())
 						} else {
-							priceval = float32(price.Elem().Float())
+							sales_date = int32(sales_date_reflector.Elem().Float())
+						}
+
+						var sales_value int32
+						sales_value_reflector := sales_collection.Index(i).Elem().MapIndex(reflect.ValueOf("value"))
+						if sales_value_reflector.Elem().Kind().String() == "int" {
+							sales_value = int32(sales_value_reflector.Elem().Int())
+						} else {
+							sales_value = int32(sales_value_reflector.Elem().Float())
+						}
+						item_sales = append(item_sales, ItemSales{sales_date, sales_value})
+					}
+
+
+					sales_series := get_sales_from_series(SalesSeries{item_sales, price_value}, tf_timezone_str, format_date)
+					sales_total := int64(0)
+					for _, sales := range sales_series {
+						sales_reflect := reflect.ValueOf(sales)
+						sales_value := sales_reflect.MapIndex(reflect.ValueOf("sales")).Elem().Int()
+						sales_total += sales_value
+					}
+					
+					if sales_total > 0 {
+						key := strconv.Itoa(item["item_id"].(int))
+						data[key] = map[string]interface{}{
+							"id": item["_id"],
+							"item_id": item["item_id"],
+							"price": item["price"],
+							"url": item["url"],
+							"img_preview": item["img_preview"],
+							"title": item["title"],
+							"total": sales_total,
 						}
 					}
-					data[item_id] = map[string]interface{}{
-						"title": title,
-						"price": priceval,
+				}
+
+				// Sorting by total value
+				sort_total := make(map[int][]string)
+				for key, v := range data {
+					val := int(reflect.ValueOf(v).MapIndex(reflect.ValueOf("total")).Elem().Int())
+					sort_total[val] = append(sort_total[val], key)
+				}
+
+				var sort_keys []int
+				for key, _ := range sort_total {
+					sort_keys = append(sort_keys, key)
+				}
+				sorting.Sort(sorting.Reverse(sorting.IntSlice(sort_keys)))
+
+				new_data := make(map[string]interface{})
+				var sort_slice []int
+				if len(sort_keys) > 9 {
+					sort_slice = sort_keys[0:10]
+				} else {
+					sort_slice = sort_keys
+				}
+				for _, key := range sort_slice {
+					for _, val := range sort_total[key] {
+						new_data[val] = data[val]
 					}
 				}
 
 				return c.JSON(http.StatusOK, map[string]interface{}{
 					"status": http.StatusOK,
-					"data": data,
+					"data": new_data,
 				})
 			} else {
 				defaultResponse.Message = err.Error()
 			}
-			defaultResponse.Message = "hahahhahaha"*/
 		}
-
-		
 	}
 
 	return c.JSON(http.StatusOK, defaultResponse)

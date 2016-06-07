@@ -10,6 +10,19 @@
 	display: flex;
 }
 
+.loader {
+	height: 150px;
+	text-align: center;
+	font-size: 25px;
+	color: #3498db;
+}
+
+.loader-inner {
+	align-items: center;
+	justify-content: center;
+	flex-grow: 1;
+}
+
 #left-nav {
 	background: #000000;
 	height: 100vh;
@@ -104,7 +117,7 @@ hr {
 }
 
 .item-created {
-	font-size: 11px;
+	font-size: 11px !important;
 }
 
 .item-created i {
@@ -268,4 +281,71 @@ hr {
 .item-subscribe-list span {
 	font-size: 14px;
 	font-style: italic;
+}
+
+#bestselling-wrapper {
+	margin-top: 20px;
+}
+
+#bestselling-wrapper>div {
+	position: relative;
+}
+
+.bestselling-item {
+	height: 200px;
+	align-items: center;
+	align-content: center;
+}
+
+.bestselling-overlay {
+	display:none;
+	position: absolute;
+	height: 100%;
+	background: rgba(0,0,0,0.6);
+	z-index: 1;
+	left: 35px;
+	right: 0;
+	top: 0;
+}
+
+.bestselling-buttons {
+	display: none;
+	position: relative;
+	width: 50%;
+	align-items: center;
+	justify-content: center;
+	flex-grow: 1;
+	height: 100%;
+	z-index: 2;
+}
+
+#bestselling-wrapper>div:hover .bestselling-overlay {
+	display: block;
+}
+
+#bestselling-wrapper>div:hover .bestselling-buttons {
+	display: flex;
+}
+
+#bestselling-wrapper>div:hover .bestselling-sales {
+	display: none;
+}
+
+.bestselling-buttons a {
+	margin: 0 5px;
+}
+
+.bestselling-sales {
+	align-items: center;
+	justify-content: center;
+	color: #ffffff;
+    font-size: 25px;
+    flex-grow: 1;
+    width: 100%;
+}
+.bestselling-total-sales {
+	flex-grow: 1;
+    text-align: center;
+    padding: 20px 0;
+    background: rgba(0,0,0,0.85);
 }

@@ -10,6 +10,11 @@ type (
 		Message string `json:"message"`
 	}
 
+	ResponseOK struct {
+		Status int `json:"status"`
+		Data map[string]interface{} `json:"data"`
+	}
+
 	Page struct {
 		Id bson.ObjectId `json:"id" bson:"_id,omitempty"`
 		Url string `json:"url"`

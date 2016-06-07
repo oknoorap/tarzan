@@ -32,6 +32,13 @@
 
 
 <!-- Template -->
+<script type="text/template" id="loader">
+<div class="loader uk-flex uk-flex-column">
+	<div class="uk-flex loader-inner">
+		<i class="uk-icon-spin uk-icon-spinner"></i>
+	</div>
+</div>
+</script>
 <script type="text/template" id="wrapper">
 <div class="uk-grid">
 	<div :class="{'uk-width-10-10': !searchForm, 'uk-width-8-10': searchForm}">
@@ -89,7 +96,8 @@
 
 			<div class="uk-grid uk-grid-collapse">
 				<div class="uk-width-1-1">
-					<canvas id="market-value" height="80"></canvas>
+					<loader v-show="loader['market-value']"></loader>
+					<canvas v-show="!loader['market-value']" id="market-value" height="80"></canvas>
 				</div>
 			</div>
 		</div>
@@ -99,12 +107,32 @@
 		<div class="uk-width-1-1">
 			<h2>Best Selling</h2>
 			<ul class="uk-subnav uk-subnav-pill">
-				<li :class="{'uk-active': tab['categories-value'] === 'today'}"><a @click="viewMarketValue('categories-value', 'today')">Today</a></li>
-				<li :class="{'uk-active': tab['categories-value'] === 'week'}"><a @click="viewMarketValue('categories-value', 'week')">Last 7 Days</a></li>
-				<li :class="{'uk-active': tab['categories-value'] === 'month'}"><a @click="viewMarketValue('categories-value', 'month')">This Month</a></li>
-				<li :class="{'uk-active': tab['categories-value'] === 'lastmonth'}"><a @click="viewMarketValue('categories-value', 'lastmonth')">Last Month</a></li>
-				<li :class="{'uk-active': tab['categories-value'] === 'year'}"><a @click="viewMarketValue('categories-value', 'year')">This Year</a></li>
+				<li :class="{'uk-active': tab['bestselling'] === 'today'}"><a @click="getBestSelling('today')">Today</a></li>
+				<li :class="{'uk-active': tab['bestselling'] === 'week'}"><a @click="getBestSelling('week')">Last 7 Days</a></li>
+				<li :class="{'uk-active': tab['bestselling'] === 'month'}"><a @click="getBestSelling('month')">This Month</a></li>
+				<li :class="{'uk-active': tab['bestselling'] === 'lastmonth'}"><a @click="getBestSelling('lastmonth')">Last Month</a></li>
+				<li :class="{'uk-active': tab['bestselling'] === 'year'}"><a @click="getBestSelling('year')">This Year</a></li>
 			</ul>
+
+			<loader v-show="loader.bestselling"></loader>
+			<div v-show="!loader.bestselling">
+				<div v-if="bestselling.length===0"></div>
+				<div v-else id="bestselling-wrapper" class="uk-grid" v-for="items in bestselling">
+					<div class="uk-width-1-3" v-for="item in items">
+						<div class="bestselling-overlay"></div>
+						<div class="uk-flex uk-flex-column bestselling-item" :style="{backgroundImage: (item.img_preview)? 'url('+ item.img_preview +')': null}">
+							<div class="uk-flex bestselling-buttons">
+								<a class="uk-button uk-button-success" v-link="{path: '/item/' + item.id}"><i class="uk-icon-line-chart"></i> View Stats</a>
+								<a class="uk-button uk-button-primary" v-link="{path: item.url}" target="_blank"><i class="uk-icon-external-link"></i> Visit Website</a>
+							</div>
+							<div class="uk-flex bestselling-sales">
+								<div class="bestselling-total-sales">Total Sales ${item.total}</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 		</div>
 	</section>
 
@@ -131,7 +159,8 @@
 
 			<div class="uk-grid uk-grid-collapse">
 				<div class="uk-width-1-1">
-					<canvas id="categories-value" height="80"></canvas>
+					<loader v-show="loader['categories-value']"></loader>
+					<canvas v-show="!loader['categories-value']" id="categories-value" height="80"></canvas>
 				</div>
 			</div>
 		</div>
@@ -160,7 +189,8 @@
 
 			<div class="uk-grid uk-grid-collapse">
 				<div class="uk-width-1-1">
-					<canvas id="group-value" height="80"></canvas>
+					<loader v-show="loader['group-value']"></loader>
+					<canvas v-show="!loader['group-value']" id="group-value" height="80"></canvas>
 				</div>
 			</div>
 		</div>

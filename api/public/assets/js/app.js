@@ -7,7 +7,6 @@ Vue.transition('show', {
 	leaveClass: 'slideOutUp'
 })
 
-
 function renderDate (date) {
 	if (!date) return
 	date = date.substr(0, 10).split('-')
@@ -30,7 +29,9 @@ function orderDate (data) {
  * @type {Object}
  */
 var App = {}
-
+App.loader = Vue.extend({
+	template: '#loader'
+})
 
 /**
  * Application dashboard
@@ -42,18 +43,28 @@ App.dashboard = Vue.extend({
 		canReuse: false,
 		waitForData: false
 	},
+	components: {loader: App.loader},
 	data: function () {
 		return {
 			tab: {
 				'market-value': 'today',
 				'categories-value': 'today',
-				'group-value': 'today'
+				'group-value': 'today',
+				'bestselling': 'today'
 			},
 
 			selectedCategory: '',
 			selectedGroup: '',
 			categories: [],
 			groups: [],
+			bestselling: null,
+			loader: {
+				bestselling: false,
+				'tag-stats': false,
+				'market-value': false,
+				'categories-value': false,
+				'group-value': false
+			},
 			canvas: {
 				'tag-stats': {},
 				'market-value': {},
@@ -156,6 +167,7 @@ App.dashboard = Vue.extend({
 				})
 
 				// Clear and Render Canvas
+				self.loader[chart] = false
 				if (canvas.chart) canvas.chart.destroy()
 				canvas.chart = new Chart(canvas.context, {
 					type: 'line',
@@ -181,6 +193,7 @@ App.dashboard = Vue.extend({
 		 */
 		viewMarketValue: function (chart, date) {
 			this.getMarketValue(chart, date)
+			this.loader[chart] = true
 			this.tab[chart] = date
 		},
 
@@ -222,6 +235,47 @@ App.dashboard = Vue.extend({
 					}
 				})
 			})
+		},
+
+		getBestSelling: function (date) {
+			var self = this
+			self.loader.bestselling = true
+			self.tab.bestselling = date
+
+			var endpoint = apiUrl.concat('dashboard/stats/market?bestselling=1&date=', date)
+			$.getJSON(endpoint).then(function (response) {
+				if (response.error) { alert(response.message); return }
+
+				// Request image preview
+				var data = []
+				var queue = async.queue(function (task, callback) {
+					if (task.img_preview === null) {
+						$.getJSON(apiUrl.concat('getPreview'), {uri: task.url}).then(function (response) {
+							if (response.error) { alert(response.message); return}
+
+							task.img_preview = response.img.url
+							data.push(task)
+							callback()
+						})
+					} else {
+						data.push(task)
+						callback()
+					}
+				});
+
+				queue.drain = function () {
+					data = _.chain(data).groupBy(function(element, index){
+						return Math.floor(index/3);
+					}).toArray().value()
+
+					self.bestselling = data
+					self.loader.bestselling = false
+				};
+
+				_.each(response.data, function (item) {
+					queue.push(item)
+				});
+			})
 		}
 	},
 	ready: function () {
@@ -229,6 +283,7 @@ App.dashboard = Vue.extend({
 		this.getCategories()
 		this.getGroups()
 		this.getTagStats()
+		this.getBestSelling('today')
 
 		this.$watch('selectedCategory', function () {
 			this.viewMarketValue('categories-value', this.tab['categories-value'])
@@ -822,6 +877,7 @@ App.subscribe.list = Vue.extend({
 					if (response.error) { alert(response.message); return }
 
 					_.each(response.list, function (item, index) {
+						item.created = renderDate(item.created)
 						_.each(item.subscribe_group_id, function (_item, _index) {
 							groups[_item].items.push(item)
 						})
