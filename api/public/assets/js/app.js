@@ -253,10 +253,9 @@ App.dashboard = Vue.extend({
 					if (task.img_preview === null) {
 						$.getJSON(apiUrl.concat('getPreview'), {uri: task.url}).then(function (response) {
 							if (response.error) { alert(response.message); return}
-							task.img_preview = response.img.url
-							data.push(task)
-							callback()
 						})
+						data.push(task)
+						callback()
 					} else {
 						data.push(task)
 						callback()
