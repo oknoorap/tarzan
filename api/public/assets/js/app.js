@@ -249,10 +249,10 @@ App.dashboard = Vue.extend({
 				// Request image preview
 				var data = []
 				var queue = async.queue(function (task, callback) {
+					task.title = task.title.replace("- WordPress | ThemeForest", "").replace("- WordPress", "")
 					if (task.img_preview === null) {
 						$.getJSON(apiUrl.concat('getPreview'), {uri: task.url}).then(function (response) {
 							if (response.error) { alert(response.message); return}
-
 							task.img_preview = response.img.url
 							data.push(task)
 							callback()
@@ -274,7 +274,12 @@ App.dashboard = Vue.extend({
 
 				_.each(response.data, function (item) {
 					queue.push(item)
-				});
+				})
+
+				if (_(data).size()===0) {
+					self.bestselling = data
+					self.loader.bestselling = false
+				}
 			})
 		}
 	},

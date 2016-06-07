@@ -339,13 +339,22 @@ hr {
 	align-items: center;
 	justify-content: center;
 	color: #ffffff;
-    font-size: 25px;
+    font-size: 19px;
     flex-grow: 1;
     width: 100%;
+}
+.bestselling-sales h2 {
+	font-size: 17px;
+	border: none !important;
+	color: #ffffff;
+	margin: 0;
 }
 .bestselling-total-sales {
 	flex-grow: 1;
     text-align: center;
     padding: 20px 0;
     background: rgba(0,0,0,0.85);
+}
+.bestselling-total-sales span.green {
+	color: #2ecc71;
 }
