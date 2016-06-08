@@ -232,6 +232,11 @@ hr {
 	padding-bottom: 5px;
 }
 
+#dashboard h2 .uk-align-right,
+#dashboard select.uk-align-right {
+	margin-left: 5px;
+}
+
 #dashboard section {
 	margin-bottom: 40px;
 }
@@ -264,10 +269,9 @@ hr {
 }
 
 .item-banner {
-	height:330px;
+	height:300px;
 	background-position:50% 50%;
 	background-repeat:no-repeat;
-	background-size: 100% 100%;
 	margin-bottom: 20px;
 }
 
@@ -301,7 +305,7 @@ hr {
 	display:none;
 	position: absolute;
 	height: 100%;
-	background: rgba(0,0,0,0.6);
+	background: rgba(0,0,0,0.85);
 	z-index: 1;
 	left: 35px;
 	right: 0;

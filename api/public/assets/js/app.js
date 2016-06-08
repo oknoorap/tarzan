@@ -1,12 +1,64 @@
 var apiUrl = './api/v1/'
 
+/**
+ * VueJS Configuration
+ */
 Vue.config.delimiters = ['${', '}'];
 Vue.config.debug = true;
 Vue.transition('show', {
 	enterClass: 'slideInDown',
 	leaveClass: 'slideOutUp'
 })
+Vue.filter('flatten', function (value) {
+	return _.flatten(value)
+})
 
+
+/**
+ * Chart.JS config
+ */
+Chart.pluginService.register({
+	beforeRender: function (chart) {
+		if (chart.config.options.showAllTooltips) {
+			chart.pluginTooltips = [];
+			chart.config.data.datasets.forEach(function (dataset, i) {
+				chart.getDatasetMeta(i).data.forEach(function (sector, j) {
+					chart.pluginTooltips.push(new Chart.Tooltip({
+						_chart: chart.chart,
+						_chartInstance: chart,
+						_data: chart.data,
+						_options: chart.options,
+						_active: [sector]
+					}, chart));
+				});
+			});
+
+			chart.options.tooltips.enabled = false;
+		}
+	},
+	afterDraw: function (chart, easing) {
+		if (chart.config.options.showAllTooltips) {
+			if (!chart.allTooltipsOnce) {
+				if (easing !== 1)
+					return;
+				chart.allTooltipsOnce = true;
+			}
+			chart.options.tooltips.enabled = true;
+			Chart.helpers.each(chart.pluginTooltips, function (tooltip) {
+				tooltip.initialize();
+				tooltip.update();
+				tooltip.pivot();
+				tooltip.transition(easing).draw();
+			});
+			chart.options.tooltips.enabled = false;
+		}
+	}
+})
+
+
+/**
+ * Helper Functions
+ */
 function renderDate (date) {
 	if (!date) return
 	date = date.substr(0, 10).split('-')
@@ -14,15 +66,34 @@ function renderDate (date) {
 }
 
 function orderDate (data) {
-	var timeline = {};
+	var newdata = {};
 	Object.keys(data).sort(function(a, b){
 		return moment(a, 'DD/MM/YYYY').toDate() - moment(b, 'DD/MM/YYYY').toDate()
 	}).forEach(function(key) {
-		timeline[key] = data[key]
+		newdata[key] = data[key]
 	});
 
-	return timeline
+	return newdata
 }
+
+
+function orderBestSelling (data) {
+	var newdata = [], dataKeys = {}
+	_.each(data, function (val, key) {
+		if (!dataKeys[val.total]) dataKeys[val.total] = []
+		dataKeys[val.total].push(key)
+	})
+	Object.keys(dataKeys).sort(function(a, b) {
+		return b - a
+	}).forEach(function (key) {
+		_.each(dataKeys[key], function (item, index) {
+			newdata.push(data[item])
+		})
+	})
+
+	return newdata
+}
+
 
 /**
  * Application
@@ -54,10 +125,13 @@ App.dashboard = Vue.extend({
 			},
 
 			selectedCategory: '',
+			selectedBestSellingMethod: '',
+			selectedBestSellingCategory: '',
 			selectedGroup: '',
 			categories: [],
 			groups: [],
 			bestselling: null,
+			bestSellingView: 'list',
 			loader: {
 				bestselling: false,
 				'tag-stats': false,
@@ -142,7 +216,9 @@ App.dashboard = Vue.extend({
 					pointHoverBorderWidth: 2,
 					pointRadius: 5,
 					pointHitRadius: 10,
-					data: []
+					data: [],
+					prices: [],
+					sales: []
 				}]
 			}
 
@@ -163,23 +239,30 @@ App.dashboard = Vue.extend({
 				// Push actual data to chart
 				_.each(orderDate(response.data), function (item, date) {
 					canvas.data.labels.push(date)
-					canvas.data.datasets[0].data.push(item.sales * item.price)
+					canvas.data.datasets[0].data.push(item.price)
+					canvas.data.datasets[0].prices.push(item.price)
+					canvas.data.datasets[0].sales.push(item.sales)
 				})
 
 				// Clear and Render Canvas
 				self.loader[chart] = false
 				if (canvas.chart) canvas.chart.destroy()
+				if (canvas.chart) canvas.chart.destroy()
 				canvas.chart = new Chart(canvas.context, {
 					type: 'line',
 					data: canvas.data,
 					options: {
-						 tooltips: {
-						 	callbacks: {
-						 		label: function(item, data) {
-						 			return '$' + item.yLabel.toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, '$1,')
-						 		}
-						 	}
-						 }
+						//showAllTooltips: true,
+						tooltips: {
+							callbacks: {
+								label: function(item, data) {
+									return '$' + item.yLabel.toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, '$1,')
+								},
+								afterLabel: function (item, data) {
+									return data.datasets[item.datasetIndex].sales[item.index] + " Sales"
+								}
+							}
+						}
 					}
 				})
 			})
@@ -237,12 +320,12 @@ App.dashboard = Vue.extend({
 			})
 		},
 
-		getBestSelling: function (date) {
-			var self = this
-			self.loader.bestselling = true
-			self.tab.bestselling = date
+		getBestSelling: function () {
+			this.loader.bestselling = true
 
-			var endpoint = apiUrl.concat('dashboard/stats/market?bestselling=1&date=', date)
+			var self = this,
+			endpoint = apiUrl.concat('dashboard/stats/market?bestselling=1&date=', self.tab.bestselling, '&method=', self.selectedBestSellingMethod, '&cat=', self.selectedBestSellingCategory)
+			
 			$.getJSON(endpoint).then(function (response) {
 				if (response.error) { alert(response.message); return }
 
@@ -271,7 +354,7 @@ App.dashboard = Vue.extend({
 					self.loader.bestselling = false
 				};
 
-				_.each(response.data, function (item) {
+				_.each(orderBestSelling(response.data), function (item) {
 					queue.push(item)
 				})
 
@@ -287,7 +370,7 @@ App.dashboard = Vue.extend({
 		this.getCategories()
 		this.getGroups()
 		this.getTagStats()
-		this.getBestSelling('today')
+		this.getBestSelling()
 
 		this.$watch('selectedCategory', function () {
 			this.viewMarketValue('categories-value', this.tab['categories-value'])
@@ -295,6 +378,18 @@ App.dashboard = Vue.extend({
 
 		this.$watch('selectedGroup', function () {
 			this.viewMarketValue('group-value', this.tab['group-value'])
+		})
+
+		this.$watch('tab.bestselling', function () {
+			this.getBestSelling()
+		})
+
+		this.$watch('selectedBestSellingCategory', function () {
+			this.getBestSelling()
+		})
+
+		this.$watch('selectedBestSellingMethod', function () {
+			this.getBestSelling()
 		})
 	}
 });
@@ -1020,7 +1115,7 @@ App.subscribe.editGroup = Vue.extend({
 
 App.search = Vue.extend({
 	template: '#search',
-	components: {wrapper: App.wrapper},
+	components: {wrapper: App.wrapper, 'group-selector': App.groupSelector},
 	route: {
 		canReuse: false,
 		waitForData: true,
@@ -1031,6 +1126,11 @@ App.search = Vue.extend({
 	data: function () {
 		return {
 			currentTab: 'search',
+			bulkAction: '',
+			allChecked: false,
+			checkAllItem: false,
+			checkedList: [],
+			groupSelector: false,
 			waiting: false,
 			defaultFilter: {
 				add: 'include',
@@ -1076,7 +1176,10 @@ App.search = Vue.extend({
 				}
 
 				self.waiting = false
-				self.list = response.list
+				self.list = _.map(response.list, function (item) {
+					item.created = renderDate(item.created)
+					return item
+				})
 				self.total = self.pagination.items = response.total
 
 				// Activate pagination
@@ -1103,6 +1206,72 @@ App.search = Vue.extend({
 		add: function () {
 			var filter = JSON.stringify(this.defaultFilter)
 			this.filters.push(JSON.parse(filter))
+		},
+
+		checkAll: function (event) {
+			this.checkedList = []
+			this.bulkAction = ''
+
+			if (!this.allChecked) {
+
+				if (this.total > 100) {
+					var confirmAllItems = confirm("There is " + this.total + " items, select all of them?")
+					this.checkAllItem = confirmAllItems
+				}
+
+				for (item in this.list) {
+					this.checkedList.push(this.list[item].item_id);
+				}
+			}
+		},
+
+		applyBulkAction: function () {
+			if (this.checkedList.length > 0) {
+				if (this.bulkAction === 'subscribe') {
+					this.groupSelector = true
+				} else {
+					this.subunsub(false)
+				}
+			}
+		},
+
+		selectedGroup: function (selected) {
+			if (selected) this.subunsub(true, selected.id)
+			else {
+				this.bulkAction = ''
+				this.checkedList = []
+				this.allChecked = false
+			}
+		},
+
+		subunsub: function (subscribe, group_id) {
+			var self = this, type = (subscribe)? 'subscribe': 'unsubscribe'
+
+			queues = async.queue(function (item_id, callback) {
+				var params = {item_id: item_id}
+
+				if (subscribe) params.group_id = group_id
+
+				$.post(apiUrl.concat(type), params)
+				.then(function (response) {
+
+					if (!response.error) {
+						_.findWhere(self.list, {item_id: item_id}).subscribed = subscribe
+					}
+
+					callback()
+				})
+			}, 5)
+
+			queues.drain = function () {
+				self.bulkAction = ''
+				self.checkedList = []
+				self.allChecked = false
+			}
+
+			_.each(_.unique(self.checkedList), function (item) {
+				queues.push(item)
+			})
 		},
 
 		search: function () {

@@ -124,34 +124,25 @@ func MarketValue (c echo.Context) error {
 		bestselling := c.QueryParam("bestselling")
 		sort := bson.M{"$sort": bson.M{"created": 1}}
 		if bestselling != "" {
+			category := c.QueryParam("cat")
+			if category != "" {
+				match_query["category"] = category
+			}
+
+			method := c.QueryParam("method")
+			if method != "" {
+
+			}
+
 			project_query["_id"] = 1
 			project_query["title"] = 1
 			project_query["item_id"] = 1
 			project_query["subscribed"] = 1
 			project_query["url"] = 1
+			project_query["author"] = 1
 			project_query["img_preview"] = 1
-			/*sort = bson.M{
-				"$sort": bson.M{"sales": -1},
-			}
-
-			//db.item.aggregate([{$project: {sales: {$arrayElemAt: [{$filter: {input: "$sales", as: "sales", cond: {$gte: ["$$sales.value", 20]} } }, -1]}}  }, {$sort: {sales: -1} } ])
-			project_query["sales"] = bson.M{
-				"$arrayElemAt": []interface{}{
-					bson.M{
-						"$filter": bson.M{
-							"input": "$sales",
-							"as": "sales",
-							"cond": bson.M{
-								"$and": []bson.M{
-									bson.M{"$gt": []interface{}{"$$sales.date", start_date}},
-									bson.M{"$lte": []interface{}{"$$sales.date", end_date}},
-								},
-							},
-						},
-					},
-					-1,
-				},
-			}*/
+			project_query["category"] = 1
+			project_query["created"] = 1
 		}
 
 
@@ -238,6 +229,9 @@ func MarketValue (c echo.Context) error {
 							"url": item["url"],
 							"img_preview": item["img_preview"],
 							"title": item["title"],
+							"category": item["category"],
+							"author": item["author"],
+							"created": item["created"],
 							"total": sales_total,
 						}
 					}

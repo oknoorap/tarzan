@@ -74,7 +74,7 @@
 					<li class="uk-active"><a href="#market-value-wrapper">Market Value</a></li>
 					<li><a href="#best-selling-wrapper">Best Selling</a></li>
 					<li><a href="#categories-value-wrapper">Categories Value</a></li>
-					<li><a href="#subscribe-stats-wrapper">Subscribe Stats</a></li>
+					<li><a href="#subscribe-stats-wrapper">Subscription Stats</a></li>
 					<li><a href="#misc-wrapper">Misc</a></li>
 				</ul>
 			</div>
@@ -105,32 +105,74 @@
 
 	<section class="uk-grid" id="best-selling-wrapper">
 		<div class="uk-width-1-1">
-			<h2>Best Selling</h2>
-			<ul class="uk-subnav uk-subnav-pill">
-				<li :class="{'uk-active': tab['bestselling'] === 'today'}"><a @click="getBestSelling('today')">Today</a></li>
-				<li :class="{'uk-active': tab['bestselling'] === 'week'}"><a @click="getBestSelling('week')">Last 7 Days</a></li>
-				<li :class="{'uk-active': tab['bestselling'] === 'month'}"><a @click="getBestSelling('month')">This Month</a></li>
-				<li :class="{'uk-active': tab['bestselling'] === 'lastmonth'}"><a @click="getBestSelling('lastmonth')">Last Month</a></li>
-				<li :class="{'uk-active': tab['bestselling'] === 'year'}"><a @click="getBestSelling('year')">This Year</a></li>
-			</ul>
+			<h2>Best Selling
+				<a class="uk-align-right uk-button" @click="bestSellingView='image'" :class="{'uk-active': bestSellingView === 'image'}"><i class="uk-icon-image"></i></a>
+				<a class="uk-align-right uk-button" @click="bestSellingView='list'" :class="{'uk-active': bestSellingView === 'list'}"><i class="uk-icon-list"></i></a>
+			</h2>
+			<div class="uk-grid uk-grid-collapse">
+				<div class="uk-width-6-10">
+					<ul class="uk-subnav uk-subnav-pill">
+						<li :class="{'uk-active': tab.bestselling === 'today'}"><a @click="tab.bestselling='today'">Today</a></li>
+						<li :class="{'uk-active': tab.bestselling === 'week'}"><a @click="tab.bestselling='week'">Last 7 Days</a></li>
+						<li :class="{'uk-active': tab.bestselling === 'month'}"><a @click="tab.bestselling='month'">This Month</a></li>
+						<li :class="{'uk-active': tab.bestselling === 'lastmonth'}"><a @click="tab.bestselling='lastmonth'">Last Month</a></li>
+						<li :class="{'uk-active': tab.bestselling === 'year'}"><a @click="tab.bestselling='year'">This Year</a></li>
+					</ul>
+				</div>
+				<div class="uk-width-4-10 uk-form">
+					<select v-model="selectedBestSellingMethod" class="uk-align-right">
+						<option value="">All The Time</option>
+						<option value="date">Created Date</option>
+					</select>
+					<select v-model="selectedBestSellingCategory" class="uk-align-right">
+						<option value="">All Market</option>
+						<option v-for="category in categories" :value="category">${category}</option>
+					</select>
+				</div>
+			</div>
 
 			<loader v-show="loader.bestselling"></loader>
 			<div v-show="!loader.bestselling">
 				<div v-if="bestselling.length===0">
-					No Items
+					<div class="uk-badge uk-badge-warning">No Items</div>
 				</div>
-				<div v-else id="bestselling-wrapper" class="uk-grid" v-for="items in bestselling">
-					<div class="uk-width-1-3" v-for="item in items">
-						<div class="bestselling-overlay"></div>
-						<div class="uk-flex uk-flex-column bestselling-item" :style="{backgroundImage: (item.img_preview)? 'url('+ item.img_preview +')': null}">
-							<div class="uk-flex bestselling-buttons">
-								<a class="uk-button uk-button-success" v-link="{path: '/item/' + item.id}"><i class="uk-icon-line-chart"></i> View Stats</a>
-								<a class="uk-button uk-button-primary" v-link="{path: item.url}" target="_blank"><i class="uk-icon-external-link"></i> Visit Website</a>
-							</div>
-							<div class="uk-flex bestselling-sales">
-								<div class="bestselling-total-sales">
-									<h2>${item.title}</h2>
-									<span>Total Sales <span class="green"><i class="uk-icon-shopping-cart"></i> ${item.total}</span> | Price <span class="green"><i class="uk-icon-dollar"></i> ${item.price}</span></span>
+				<div v-else>
+					<div v-if="bestSellingView==='list'">
+						<table class="uk-table uk-table-hover uk-table-striped uk-table-condensed">
+							<thead>
+								<tr>
+									<th>Title</th>
+									<th>Category</th>
+									<th>Price</th>
+									<th style="width:50px">Sales</th>
+								<tr>
+							</thead>
+							<tbody>
+								<tr v-for="item in bestselling|flatten">
+									<td>
+										<a v-link="{path: '/item/' + item.id}" class="item-title">${item.title}</a>
+										<span class="item-created"><i class="uk-icon-calendar"></i> ${item.created}</span> <a href="http://themeforest.net/user/${item.author}/portfolio" class="item-author" target="_blank"><i class="uk-icon-user"></i> ${item.author}</a> - <a href="${item.url}" class="url" target="_blank">Visit Page <i class="uk-icon-external-link"></i></a>
+									</td>
+									<td>${item.category}</td>
+									<td>${'$' + item.price}</td>
+									<td>${item.total}</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<div v-else id="bestselling-wrapper" class="uk-grid" v-for="items in bestselling">
+						<div class="uk-width-1-3" v-for="item in items">
+							<div class="bestselling-overlay"></div>
+							<div class="uk-flex uk-flex-column bestselling-item" :style="{backgroundImage: (item.img_preview)? 'url('+ item.img_preview +')': null}">
+								<div class="uk-flex bestselling-buttons">
+									<a class="uk-button uk-button-success" v-link="{path: '/item/' + item.id}"><i class="uk-icon-line-chart"></i> View Stats</a>
+									<a class="uk-button uk-button-primary" v-link="{path: item.url}" target="_blank"><i class="uk-icon-external-link"></i> Visit Website</a>
+								</div>
+								<div class="uk-flex bestselling-sales">
+									<div class="bestselling-total-sales">
+										<h2>${item.title}</h2>
+										<span>Total Sales <span class="green"><i class="uk-icon-shopping-cart"></i> ${item.total}</span> | Price <span class="green"><i class="uk-icon-dollar"></i> ${item.price}</span></span>
+									</div>
 								</div>
 							</div>
 						</div>
@@ -173,7 +215,7 @@
 
 	<section class="uk-grid" id="subscribe-stats-wrapper">
 		<div class="uk-width-1-1">
-			<h2>Subscribe Stats</h2>
+			<h2>Subscription Stats</h2>
 			<div class="uk-grid uk-grid-collapse">
 				<div class="uk-width-6-10">
 					<ul class="uk-subnav uk-subnav-pill">
@@ -428,7 +470,7 @@
 
 
 <script type="text/template" id="subscribe">
-	<wrapper icon="bookmark-o" title="Subscribe List">
+	<wrapper icon="bookmark-o" title="Subscription List">
 		<ul class="uk-subnav uk-subnav-pill" style="display:block">
 			<li :class="{'uk-active': $route.path === '/subscribe'}"><a v-link="{path: '/subscribe'}"><i class="uk-icon-star"></i> Subscribing</a></li>
 			<li :class="{'uk-active': $route.path === '/subscribe/group'}"><a v-link="{path: '/subscribe/group'}"><i class="uk-icon-list"></i> Groups</a></li>
@@ -537,132 +579,144 @@
 </script>
 
 <script type="text/template" id="search">
-	<wrapper icon="search" title="Advanced Search">
-		<ul class="uk-subnav uk-subnav-pill" style="display:block">
-			<li :class="{'uk-active': currentTab === 'search'}"><a @click="currentTab='search'"><i class="uk-icon-filter"></i> Filters</a></li>
-			<li :class="{'uk-active': currentTab === 'result'}"><a @click="currentTab='result'"><i class="uk-icon-list"></i> Result</a></li>
-		</ul>
+<group-selector :show.sync="groupSelector" :done="selectedGroup"></group-selector>
+<wrapper icon="search" title="Advanced Search">
+	<ul class="uk-subnav uk-subnav-pill" style="display:block">
+		<li :class="{'uk-active': currentTab === 'search'}"><a @click="currentTab='search'"><i class="uk-icon-filter"></i> Filters</a></li>
+		<li :class="{'uk-active': currentTab === 'result'}"><a @click="currentTab='result'"><i class="uk-icon-list"></i> Result</a></li>
+	</ul>
 
-		<hr />
-		<form class="uk-form" v-if="currentTab==='search'">
-			<div class="uk-grid uk-grid-small" v-for="filter in filters">
-				<div class="uk-width-1-10">
-					<select v-model="filter.field" class="uk-width-1-1">
-						<option value="title">Title</option>
-						<option value="price">Price</option>
-						<option value="author">Author</option>
-						<option value="sales">Sales</option>
-						<option value="category">Category</option>
-						<option value="tags">Tags</option>
-					</select>
-				</div>
-				<div class="uk-width-1-10" v-if="filter.field === 'sales'">
-					<select v-model="filter.date" class="uk-width-1-1">
-						<option value="">When</option>
-						<option value="today">Today</option>
-						<option value="weeks">This Weeks</option>
-						<option value="month">This Month</option>
-						<option value="year">This Year</option>
-						<option value="year">All</option>
-					</select>
-				</div>
-				<div class="uk-width-1-10">
-					<select v-model="filter.criteria.number" v-if="filter.field === 'price' || filter.field === 'sales'" class="uk-width-1-1">
-						<option value="">Select Filter</option>
-						<option value="$gte">Greater Than</option>
-						<option value="$lte">Less Than</option>
-					</select>
-					<select v-model="filter.criteria.category" v-if="filter.field === 'category'" class="uk-width-1-1">
-						<option value="">Select Category</option>
-						<option v-for="category in categories" :value="category">${category}</option>
-					</select>
-					<select v-model="filter.criteria.tags" v-if="filter.field ==='tags'" class="uk-width-1-1">
-						<option value="">Select Filter</option>
-						<option value="$eq">Equals To</option>
-						<option value="$ne">Not Equals To</option>
-						<option value="c">Contains</option>
-						<option value="!c">Not Contains</option>
-						<option value="^">Begins With</option>
-						<option value="$">Ends With</option>
-					</select>
-					<select v-model="filter.criteria.title" v-if="filter.field ==='title'" class="uk-width-1-1">
-						<option value="">Select Filter</option>
-						<option value="$eq">Equals To</option>
-						<option value="$ne">Not Equals To</option>
-						<option value="c">Contains</option>
-						<option value="!c">Not Contains</option>
-						<option value="^">Begins With</option>
-						<option value="$">Ends With</option>
-					</select>
-					<select v-model="filter.criteria.author" v-if="filter.field === 'author'" class="uk-width-1-1">
-						<option value="">Select Filter</option>
-						<option value="$eq">Equals To</option>
-						<option value="$ne">Not Equals To</option>
-						<option value="c">Contains</option>
-						<option value="!c">Not Contains</option>
-						<option value="^">Begins With</option>
-						<option value="$">Ends With</option>
-					</select>
-				</div>
-				<div class="uk-width-1-10" v-if="filter.field !== 'category'">
-					<input v-model="filter.value" class="uk-width-1-1" @keyup.enter="search()">
-				</div>
-				<div class="uk-width-1-10">
-					<a @click="remove(filter, $index)"><i class="uk-close"></i></a>
-				</div>
+	<hr />
+	<form class="uk-form" v-if="currentTab==='search'">
+		<div class="uk-grid uk-grid-small" v-for="filter in filters">
+			<div class="uk-width-1-10">
+				<select v-model="filter.field" class="uk-width-1-1">
+					<option value="title">Title</option>
+					<option value="price">Price</option>
+					<option value="author">Author</option>
+					<option value="sales">Sales</option>
+					<option value="category">Category</option>
+					<option value="tags">Tags</option>
+				</select>
 			</div>
-
-			<div class="uk-grid">
-				<dkv class="uk-width-1-1">
-					<a class="uk-button uk-button-success" @click="add()"><i class="uk-icon-plus"></i> Add</a>
-					<a class="uk-button uk-button-primary" @click="search()"><i class="uk-icon-search"></i> Search</a>
-				</dkv>
+			<div class="uk-width-1-10" v-if="filter.field === 'sales'">
+				<select v-model="filter.date" class="uk-width-1-1">
+					<option value="">When</option>
+					<option value="today">Today</option>
+					<option value="weeks">This Weeks</option>
+					<option value="month">This Month</option>
+					<option value="year">This Year</option>
+					<option value="year">All</option>
+				</select>
 			</div>
-		</form>
-
-
-		<div v-if="currentTab==='result'">
-			<span v-if="waiting"><i class="uk-icon-spin uk-icon-spinner"></i> Searching...</span>
-			<div class="uk-grid">
-				<div class="uk-width-4-10">
-					<h3 v-if="total>0">We've found <strong style="text-decoration: underline">${total}</strong> items in our database</h3>
-					<h3 v-if="total===0">It's seems our database can't found any single item.</h3>
-				</div>
-				<div class="uk-width-6-10">
-					<ul id="pagination-search" v-if="total>100" class="uk-pagination" data-uk-pagination="${pagination|json}" style="text-align: right"></ul>
-				</div>
+			<div class="uk-width-1-10">
+				<select v-model="filter.criteria.number" v-if="filter.field === 'price' || filter.field === 'sales'" class="uk-width-1-1">
+					<option value="">Select Filter</option>
+					<option value="$gte">Greater Than</option>
+					<option value="$lte">Less Than</option>
+				</select>
+				<select v-model="filter.criteria.category" v-if="filter.field === 'category'" class="uk-width-1-1">
+					<option value="">Select Category</option>
+					<option v-for="category in categories" :value="category">${category}</option>
+				</select>
+				<select v-model="filter.criteria.tags" v-if="filter.field ==='tags'" class="uk-width-1-1">
+					<option value="">Select Filter</option>
+					<option value="$eq">Equals To</option>
+					<option value="$ne">Not Equals To</option>
+					<option value="c">Contains</option>
+					<option value="!c">Not Contains</option>
+					<option value="^">Begins With</option>
+					<option value="$">Ends With</option>
+				</select>
+				<select v-model="filter.criteria.title" v-if="filter.field ==='title'" class="uk-width-1-1">
+					<option value="">Select Filter</option>
+					<option value="$eq">Equals To</option>
+					<option value="$ne">Not Equals To</option>
+					<option value="c">Contains</option>
+					<option value="!c">Not Contains</option>
+					<option value="^">Begins With</option>
+					<option value="$">Ends With</option>
+				</select>
+				<select v-model="filter.criteria.author" v-if="filter.field === 'author'" class="uk-width-1-1">
+					<option value="">Select Filter</option>
+					<option value="$eq">Equals To</option>
+					<option value="$ne">Not Equals To</option>
+					<option value="c">Contains</option>
+					<option value="!c">Not Contains</option>
+					<option value="^">Begins With</option>
+					<option value="$">Ends With</option>
+				</select>
 			</div>
-			<div v-if="total>0" class="uk-grid">
-				<div class="uk-width-1-1">
-					<table class="uk-table uk-table-hover uk-table-striped uk-table-condensed">
-						<thead>
-							<tr>
-								<th style="width:15px"><input type="checkbox" @click="checkAll()" v-model="allChecked"></th>
-								<th style="width:15px"><i class="uk-icon-star"></i></th>
-								<th>Title</th>
-								<th>Price</th>
-								<th>Category</th>
-								<th style="width:50px">Sales</th>
-							<tr>
-						</thead>
-						<tbody>
-							<tr v-for="item in list">
-								<td><input type="checkbox" v-model="checkedList" :value="item.item_id"></td>
-								<td><a class="item-subscribe" :class="{subscribed: item.subscribed}"></a></td>
-								<td>
-									<a v-link="{path: '/item/' + item.id}" class="item-title">${item.title}</a>
-									<span class="item-created"><i class="uk-icon-calendar"></i> ${item.created}</span> <a href="http://themeforest.net/user/${item.author}/portfolio" class="item-author" target="_blank"><i class="uk-icon-user"></i> ${item.author}</a> - <a href="${item.url}" class="url" target="_blank">Visit Page <i class="uk-icon-external-link"></i></a>
-								</td>
-								<td>${'$' + item.price}</td>
-								<td>${item.category}</td>
-								<td>${item.sales[0].value}</td>
-							</tr>
-						</tbody>
-					</table>
-				</div>
+			<div class="uk-width-1-10" v-if="filter.field !== 'category'">
+				<input v-model="filter.value" class="uk-width-1-1" @keyup.enter="search()">
+			</div>
+			<div class="uk-width-1-10">
+				<a @click="remove(filter, $index)"><i class="uk-close"></i></a>
 			</div>
 		</div>
-	</wrapper>
+
+		<div class="uk-grid">
+			<dkv class="uk-width-1-1">
+				<a class="uk-button uk-button-success" @click="add()"><i class="uk-icon-plus"></i> Add</a>
+				<a class="uk-button uk-button-primary" @click="search()"><i class="uk-icon-search"></i> Search</a>
+			</dkv>
+		</div>
+	</form>
+
+
+	<div v-if="currentTab==='result'">
+		<span v-if="waiting"><i class="uk-icon-spin uk-icon-spinner"></i> Searching...</span>
+		<h3 v-if="total>0">We've found <strong style="text-decoration: underline">${total}</strong> items in our database</h3>
+		<h3 v-if="total===0">It's seems our database can't found any single item.</h3>
+
+		<div v-if="total>0" class="uk-grid">
+			<div class="uk-width-4-10">
+				<form class="uk-form">
+					<select v-model="bulkAction">
+						<option value="">Bulk Action</option>
+						<option value="subscribe">Subscribe</option>
+						<option value="unsubscribe">Unsubscribe</option>
+					</select>
+					<button class="uk-button uk-button-primary" @click="applyBulkAction()">OK</button>
+				</form>
+			</div>
+			<div class="uk-width-6-10">
+				<ul id="pagination-search" v-if="total>100" class="uk-pagination" data-uk-pagination="${pagination|json}" style="text-align: right"></ul>
+			</div>
+		</div>
+		<div v-if="total>0" class="uk-grid">
+			<div class="uk-width-1-1">
+				<table class="uk-table uk-table-hover uk-table-striped uk-table-condensed">
+					<thead>
+						<tr>
+							<th style="width:15px"><input type="checkbox" @click="checkAll()" v-model="allChecked"></th>
+							<th style="width:15px"><i class="uk-icon-star"></i></th>
+							<th>Title</th>
+							<th>Category</th>
+							<th>Date Created</th>
+							<th>Price</th>
+							<th style="width:50px">Sales</th>
+						<tr>
+					</thead>
+					<tbody>
+						<tr v-for="item in list">
+							<td><input type="checkbox" v-model="checkedList" :value="item.item_id"></td>
+							<td><a class="item-subscribe" :class="{subscribed: item.subscribed}"></a></td>
+							<td>
+								<a v-link="{path: '/item/' + item.id}" class="item-title">${item.title}</a>
+								<a href="http://themeforest.net/user/${item.author}/portfolio" class="item-author" target="_blank"><i class="uk-icon-user"></i> ${item.author}</a> - <a href="${item.url}" class="url" target="_blank">Visit Page <i class="uk-icon-external-link"></i></a>
+							</td>
+							<td>${item.category}</td>
+							<td>${item.created}</td>
+							<td>${'$' + item.price}</td>
+							<td>${item.sales[0].value}</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</wrapper>
 </script>
 
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.3/jquery.min.js" defer></script>

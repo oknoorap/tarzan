@@ -106,7 +106,16 @@ func get_sales_from_series(item SalesSeries, time_location string, format_date s
 	for date, value := range counted_sales {
 		item := reflect.ValueOf(data[date])
 		if item.IsValid() {
+			price_reflector := item.MapIndex(reflect.ValueOf("price")).Elem()
+			price := float32(0)
+			if price_reflector.Kind().String() == "float32" {
+				price = float32(price_reflector.Float())
+			} else {
+				price = float32(price_reflector.Int())
+			}
+			total_sales := price * float32(value)
 			item.SetMapIndex(reflect.ValueOf("sales"), reflect.ValueOf(value))
+			item.SetMapIndex(reflect.ValueOf("price"), reflect.ValueOf(total_sales))
 		}
 	}
 	
