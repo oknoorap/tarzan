@@ -868,7 +868,7 @@ App.subscribe.list = Vue.extend({
 	},
 	methods: {
 		fetch: function () {
-			return $.getJSON('http://localhost:8080/api/v1/list/subscribe/group', function (response) {
+			return $.getJSON(apiUrl.concat('list/subscribe/group'), function (response) {
 				if (response.error) { alert(response.message); return }
 
 				var groups = {}
@@ -877,7 +877,7 @@ App.subscribe.list = Vue.extend({
 					groups[item.id].items = []
 				})
 
-				$.getJSON('http://localhost:8080/api/v1/list/subscribe', function (response) {
+				$.getJSON(apiUrl.concat('list/subscribe'), function (response) {
 					if (response.error) { alert(response.message); return }
 
 					_.each(response.list, function (item, index) {
