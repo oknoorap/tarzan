@@ -53,12 +53,12 @@ func MarketValue (c echo.Context) error {
 			start_date = int32(now.AddDate(0, 0, -8).Unix())
 		} else if date == "month" {
 			format_date = "02/01/2006"
-			_, m, _ := now.AddDate(0, -1, 0).Date()
+			_, m, _ := now.Date()
 			start_date = int32(time.Date(year, m, 1, -1, 0, 0, 0, local).Unix())
 		} else if date == "lastmonth" {
 			format_date = "02/01/2006"
 			_, m, _ := now.AddDate(0, -1, 0).Date()
-			start := time.Date(year, m, 1, 0, 0, 0, 0, local)
+			start := time.Date(year, m, 1, -1, 0, 0, 0, local)
 			start_date = int32(start.Unix())
 			end_date = int32(time.Date(year, m, start.Day(), 0, 0, 0, 0, local).Unix())
 		} else if date == "year" {
