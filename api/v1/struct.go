@@ -97,4 +97,16 @@ type (
 		Label string `json:"label" bson:"_id"`
 		Count int32 `json:"count"`
 	}
+
+	jsondata []string
 )
+
+func (j* jsondata) delete (selector string) {
+	var r jsondata
+	for _, str := range *j {
+		if str != selector {
+			r = append(r, str)
+		}
+	}
+	*j = r
+}

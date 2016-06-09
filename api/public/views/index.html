@@ -489,13 +489,21 @@
 
 <script type="text/template" id="subscribe-list">
 	<subscribe-wrapper :search.sync="search">
-		<div class="item-subscribe-list" v-for="group in list|filterBy search" v-if="group.items.length>0">
-			<h3>${group.name} - <span>${group.desc} &middot; <strong>10 Items</strong></span></h3>
+		<loader v-show="!list"></loader>
+		<div v-show="list" class="item-subscribe-list" v-for="group in list|filterBy search" v-if="group.items.length>0">
+			<div class="uk-grid">
+				<div class="uk-width-7-10">
+					<h3>${group.name} - <span>${group.desc} &middot; <strong>${group.items.length} Items</strong></span></h3>
+				</div>
+				<div class="uk-width-3-10">
+					<button class="uk-button uk-button-primary uk-align-right" :disabled="checkedList[group.name].length<1"><i class="uk-icon-star"></i> Unsubscribe</button>
+				</div>
+			</div>
 
 			<table class="uk-table uk-table-hover uk-table-striped uk-table-condensed">
 				<thead>
 					<tr>
-						<th style="width:15px"><input type="checkbox" @click="checkAll()" v-model="allChecked"></th>
+						<th style="width:15px"><input type="checkbox" @click="checkAll(group.name)" v-model="allChecked[group.name]"></th>
 						<th style="width:100px">Item ID</th>
 						<th>Title</th>
 						<th style="width:50px">Sales</th>
@@ -504,7 +512,7 @@
 				<tbody>
 					<tbody>
 						<tr v-for="item in group.items|filterBy search">
-							<td><input type="checkbox" v-model="checkedList" :value="item.item_id"></td>
+							<td><input type="checkbox" v-model="checkedList[group.name]" :value="item.item_id"></td>
 							<td>${item.item_id}</td>
 							<td>
 								<a v-link="{path: '/item/' + item.id}" class="item-title">${item.title}</a>

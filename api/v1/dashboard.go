@@ -53,8 +53,7 @@ func MarketValue (c echo.Context) error {
 			start_date = int32(now.AddDate(0, 0, -8).Unix())
 		} else if date == "month" {
 			format_date = "02/01/2006"
-			_, m, _ := now.Date()
-			start_date = int32(time.Date(year, m, 1, -1, 0, 0, 0, local).Unix())
+			start_date = int32(time.Date(year, month, 1, -1, 0, 0, 0, local).Unix())
 		} else if date == "lastmonth" {
 			format_date = "02/01/2006"
 			_, m, _ := now.AddDate(0, -1, 0).Date()
@@ -126,12 +125,33 @@ func MarketValue (c echo.Context) error {
 		if bestselling != "" {
 			category := c.QueryParam("cat")
 			if category != "" {
-				match_query["category"] = category
+				match_query["category"] = bson.M{
+					"$regex": bson.RegEx{category, ""},
+				}
 			}
 
 			method := c.QueryParam("method")
 			if method != "" {
 
+				date_range := ""
+				timezone, _ := time.LoadLocation(tf_timezone_str)
+
+				if date == "today" {
+					date_range = now.AddDate(0, 0, -1).In(timezone).Format("2006-01-02")
+				} else if date == "week" {
+					date_range = now.AddDate(0, 0, -8).In(timezone).Format("2006-01-02")
+				} else if date == "month" {
+					date_range = time.Date(year, month, 1, -1, 0, 0, 0, timezone).Format("2006-01-02")
+				} else if date == "lastmonth" {
+					_, month, _ := now.AddDate(0, -1, 0).Date()
+					date_range = time.Date(year, month, 1, -1, 0, 0, 0, timezone).Format("2006-01-02")
+				} else if date == "year" {
+					date_range = time.Date(year, 0, 0, 0, 0, 0, 0, timezone).Format("2006-01-02")
+				}
+
+				match_query["created"] = bson.M{
+					"$gte": date_range,
+				}
 			}
 
 			project_query["_id"] = 1

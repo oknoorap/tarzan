@@ -666,8 +666,8 @@ App.item = {
 		data: function () {
 			return {
 				bulkAction: '',
-				allChecked: false,
 				checkAllItem: false,
+				allChecked: false,
 				checkedList: [],
 				groupSelector: false,
 				paginationLoaded: false,
@@ -721,7 +721,7 @@ App.item = {
 				this.fetch(offset).then(this.changedPage)
 			},
 
-			checkAll: function (event) {
+			checkAll: function () {
 				this.checkedList = []
 				this.bulkAction = ''
 
@@ -988,29 +988,42 @@ App.subscribe.wrapper = Vue.extend({
 
 App.subscribe.list = Vue.extend({
 	template: '#subscribe-list',
-	components: {wrapper: App.wrapper, 'subscribe-wrapper': App.subscribe.wrapper},
+	components: {wrapper: App.wrapper, 'subscribe-wrapper': App.subscribe.wrapper, loader: App.loader},
 	route: {
 		canReuse: false,
 		waitForData: true,
 		data: function () {
 			return this.fetch()
-		},
+		}
+	},
+	data: function () {
+		return {
+			allChecked: {},
+			checkedList: {},
+			list: null
+		}
+	},
+	ready: function () {
+		this.fetch()
 	},
 	methods: {
 		fetch: function () {
+			var self = this
 			return $.getJSON(apiUrl.concat('list/subscribe/group'), function (response) {
 				if (response.error) { alert(response.message); return }
 
-				var groups = {}
+				var groups = {}, checkedList = {}
 				_.each(response.list, function (item, index) {
 					groups[item.id] = item
 					groups[item.id].items = []
+					checkedList[item.name] = []
 				})
 
 				$.getJSON(apiUrl.concat('list/subscribe'), function (response) {
 					if (response.error) { alert(response.message); return }
 
 					_.each(response.list, function (item, index) {
+						//self.checkedList[item.name] = []
 						item.created = renderDate(item.created)
 						_.each(item.subscribe_group_id, function (_item, _index) {
 							if (groups[_item]) {
@@ -1020,9 +1033,23 @@ App.subscribe.list = Vue.extend({
 					})
 				})
 
+				self.$nextTick(function() {
+					self.$set('checkedList', checkedList)
+				})
+
 				return groups
 			})
-		}
+		},
+
+		checkAll: function (name) {
+			this.checkedList[name] = []
+			if (!this.allChecked[name]) {
+				var list = _.findWhere(this.list, {name: name})
+				for (item in list.items) {
+					this.checkedList[name].push(list.items[item].item_id)
+				}
+			}
+		},
 	}
 });
 
@@ -1245,7 +1272,7 @@ App.search = Vue.extend({
 			this.filters.push(JSON.parse(filter))
 		},
 
-		checkAll: function (event) {
+		checkAll: function () {
 			this.checkedList = []
 			this.bulkAction = ''
 

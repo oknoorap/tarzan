@@ -42,8 +42,9 @@ func CategoryList (c echo.Context) error {
 		collection := dbSession.DB("tarzan").C("item")
 
 		// Iterate all list
-		var result []string
+		var result jsondata
 		err := collection.Find(nil).Distinct("category", &result)
+		result.delete("")
 
 		// Send response
 		if err == nil {
