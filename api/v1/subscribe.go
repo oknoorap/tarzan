@@ -379,12 +379,33 @@ func SubscribeList (c echo.Context) error {
 		collection := dbSession.DB("tarzan").C("item")
 
 		// Iterate all list
-		iterate := collection.Find(bson.M{
-			"subscribed": true,
-		}).Limit(100).Iter()
+		//db.item.aggregate([{ $match: {subscribed: true}}, {$project: {_id: 1, item_id: 1, url: 1, author: 1, title: 1, created: 1, sales: {$slice: ["$sales", -1]}, subscribe_group_id: 1, subscribed: 1}}])
+		aggregate := collection.Pipe([]bson.M{
+			bson.M{
+				"$project": bson.M{
+					"_id": 1,
+					"item_id": 1,
+					"url": 1,
+					"author:": 1,
+					"title": 1,
+					"created": 1,
+					"subscribed": 1,
+					"subscribe_group_id": 1,
+					"sales": bson.M{
+						"$slice": []interface{}{"$sales", -1},
+					},
+				},
+			},
+			bson.M{
+				"$match": bson.M{
+					"subscribed": true,
+				},
+			},
+			bson.M{"$limit": 500},
+		})
 
 		var result []ItemSubscribe
-		err := iterate.All(&result)
+		err := aggregate.Iter().All(&result)
 
 		// Send response
 		if err == nil {
