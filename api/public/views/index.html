@@ -273,9 +273,9 @@
 <script type="text/template" id="watcher-list">
 	<wrapper icon="rss"
 		title="Watch List"
+		search-label="Search Watcher"
 		:search-form="true"
 		:search-model.sync="search"
-		search-label="Search Watcher"
 		:add-button="true">
 		<table class="uk-table uk-table-hover uk-table-striped uk-table-condensed">
 			<thead>
@@ -470,22 +470,27 @@
 
 
 <script type="text/template" id="subscribe">
-	<wrapper icon="bookmark-o" title="Subscription List">
+	<wrapper
+		icon="bookmark-o"
+		title="Subscription List"
+		search-label="Search List"
+		:search-form="true"
+		:search-model.sync="search">
 		<ul class="uk-subnav uk-subnav-pill" style="display:block">
 			<li :class="{'uk-active': $route.path === '/subscribe'}"><a v-link="{path: '/subscribe'}"><i class="uk-icon-star"></i> Subscribing</a></li>
 			<li :class="{'uk-active': $route.path === '/subscribe/group'}"><a v-link="{path: '/subscribe/group'}"><i class="uk-icon-list"></i> Groups</a></li>
 			<li class="uk-align-right"><a v-link="{path: '/subscribe/group/add'}" class="uk-button uk-button-success"><i class="uk-icon-plus"></i> Add Group</a></li>
 		</ul>
-		<hr />
 
+		<hr />
 		<slot></slot>
 	</wrapper>
 </script>
 
 <script type="text/template" id="subscribe-list">
-	<subscribe-wrapper>
-		<div class="item-subscribe-list" v-for="group in list" v-if="group.items.length>0">
-			<h3>${group.name} - <span>${group.desc}</span></h3>
+	<subscribe-wrapper :search.sync="search">
+		<div class="item-subscribe-list" v-for="group in list|filterBy search" v-if="group.items.length>0">
+			<h3>${group.name} - <span>${group.desc} &middot; <strong>10 Items</strong></span></h3>
 
 			<table class="uk-table uk-table-hover uk-table-striped uk-table-condensed">
 				<thead>
@@ -648,7 +653,7 @@
 				</select>
 			</div>
 			<div class="uk-width-1-10" v-if="filter.field !== 'category'">
-				<input v-model="filter.value" class="uk-width-1-1" @keyup.enter="search()">
+				<input v-model="filter.value" class="uk-width-1-1" @keydown.enter="search()">
 			</div>
 			<div class="uk-width-1-10">
 				<a @click="remove(filter, $index)"><i class="uk-close"></i></a>

@@ -66,10 +66,10 @@ function renderDate (date) {
 }
 
 function orderDate (data) {
-	var newdata = {};
+	var newdata = {}
 	Object.keys(data).sort(function(a, b){
 		return moment(a, 'DD/MM/YYYY').toDate() - moment(b, 'DD/MM/YYYY').toDate()
-	}).forEach(function(key) {
+	}).forEach(function (key, item) {
 		newdata[key] = data[key]
 	});
 
@@ -236,12 +236,17 @@ App.dashboard = Vue.extend({
 			$.getJSON(endpoint).then(function (response) {
 				if (response.error) { alert(response.message); return }
 
+				// Remove first array, it's just a dummy
 				// Push actual data to chart
+				var count = 0
 				_.each(orderDate(response.data), function (item, date) {
-					canvas.data.labels.push(date)
-					canvas.data.datasets[0].data.push(item.price)
-					canvas.data.datasets[0].prices.push(item.price)
-					canvas.data.datasets[0].sales.push(item.sales)
+					if (count > 0) {
+						canvas.data.labels.push(date)
+						canvas.data.datasets[0].data.push(item.price)
+						canvas.data.datasets[0].prices.push(item.price)
+						canvas.data.datasets[0].sales.push(item.sales)
+					}
+					count++
 				})
 
 				// Clear and Render Canvas
@@ -470,6 +475,20 @@ App.groupSelector = Vue.extend({
 			this.show = false
 		}
 	}
+});
+
+App.Star = Vue.extend({
+	template: '#star',
+	props: {
+		item_id: {
+			type: Boolean,
+			default: 0,
+			required: true
+		}
+	},
+	data: function () {},
+	ready: function () {},
+	methods: {}
 });
 
 
@@ -845,7 +864,8 @@ App.item = {
 						pointRadius: 5,
 						pointHitRadius: 10,
 						data: [],
-						sales: []
+						sales: [],
+						prices: []
 					}]
 				}
 
@@ -854,10 +874,15 @@ App.item = {
 					if (response.error) { alert(response.message); return }
 
 					// Push actual data to chart
+					var count = 0
 					_.each(orderDate(response.data), function (item, date) {
-						self.canvas.data.labels.push(date)
-						self.canvas.data.datasets[0].data.push(item.sales * item.price)
-						self.canvas.data.datasets[0].sales.push(item.sales)
+						if (count > 0) {
+							self.canvas.data.labels.push(date)
+							self.canvas.data.datasets[0].data.push(item.price)
+							self.canvas.data.datasets[0].prices.push(item.price)
+							self.canvas.data.datasets[0].sales.push(item.sales)
+						}
+						count++
 					})
 
 					// Clear and Render Canvas
@@ -866,13 +891,18 @@ App.item = {
 						type: 'line',
 						data: self.canvas.data,
 						options: {
+							title: {
+								display: true
+							},
 							 tooltips: {
 							 	callbacks: {
-							 		label: function(item, data) {
-							 			var sales = data.datasets[item.datasetIndex].sales[item.index]
-							 			return sales +' x ' + self.price + ' = $' + (item.yLabel).toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, '$1,')
-							 		}
-							 	}
+									label: function(item, data) {
+										return '$' + item.yLabel.toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, '$1,')
+									},
+									afterLabel: function (item, data) {
+										return data.datasets[item.datasetIndex].sales[item.index] + " Sales"
+									}
+								}
 							 }
 						}
 					})
@@ -947,6 +977,11 @@ App.item = {
 App.subscribe = {}
 App.subscribe.wrapper = Vue.extend({
 	template: '#subscribe',
+	props: {
+		search: {
+			default: ''
+		}
+	},
 	components: {wrapper: App.wrapper}
 });
 	
@@ -978,7 +1013,9 @@ App.subscribe.list = Vue.extend({
 					_.each(response.list, function (item, index) {
 						item.created = renderDate(item.created)
 						_.each(item.subscribe_group_id, function (_item, _index) {
-							groups[_item].items.push(item)
+							if (groups[_item]) {
+								groups[_item].items.push(item)
+							}
 						})
 					})
 				})
@@ -1274,10 +1311,13 @@ App.search = Vue.extend({
 			})
 		},
 
-		search: function () {
+		search: function () {	
 			var self = this
 			self.waiting = true
 			self.currentTab = 'result'
+			self.bulkAction = ''
+			self.checkedList = []
+			self.allChecked = false
 
 			async.waterfall([
 				// Get all include params

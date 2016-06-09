@@ -63,7 +63,7 @@ func MarketValue (c echo.Context) error {
 			end_date = int32(time.Date(year, m, start.Day(), 0, 0, 0, 0, local).Unix())
 		} else if date == "year" {
 			format_date = "01/2006"
-			start_date = int32(time.Date(year, time.January, 1, 0, 0, 0, 0, local).Unix())
+			start_date = int32(time.Date(year, time.January, 1, -1, 0, 0, 0, local).Unix())
 		}
 
 		// Set Mgo Session
