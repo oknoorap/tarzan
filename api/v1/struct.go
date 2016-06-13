@@ -4,6 +4,11 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+const (
+	tf_timezone_str = "Australia/Melbourne"
+	local_str = "America/New_York"
+)
+
 type (
 	Error struct {
 		Error bool `json:"error"`
@@ -29,7 +34,11 @@ type (
 		Author string `json:"author"`
 		Title string `json:"title"`
 		Created string `json:"created"`
-		Sales []ItemSales `json:"sales"`
+		Category string `json:"category"`
+		Price float32 `json:"price"`
+		Weeksales []ItemSales `json:"-"`
+		WeeksalesData int32 `json:"weeksales"`
+		Sales ItemSales `json:"sales"`
 		Subscribed bool `json:"subscribed"`
 	}
 
@@ -65,8 +74,12 @@ type (
 		Url string `json:"url"`
 		Author string `json:"author"`
 		Title string `json:"title"`
+		Price float32 `json:"price"`
 		Created string `json:"created"`
-		Sales []ItemSales `json:"sales"`
+		Category string `json:"category"`
+		Weeksales []ItemSales `json:"-"`
+		WeeksalesData int32 `json:"weeksales"`
+		Sales ItemSales `json:"sales"`
 		Subscribe_group_id []string `json:"subscribe_group_id"`
 		Subscribed bool `json:"subscribed"`
 	}

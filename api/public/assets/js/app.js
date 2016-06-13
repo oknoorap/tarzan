@@ -1,3 +1,6 @@
+/*! (C) WebReflection Mit Style License */
+var CircularJSON=function(e,t){function l(e,t,o){var u=[],f=[e],l=[e],c=[o?n:"[Circular]"],h=e,p=1,d;return function(e,v){return t&&(v=t.call(this,e,v)),e!==""&&(h!==this&&(d=p-a.call(f,this)-1,p-=d,f.splice(p,f.length),u.splice(p-1,u.length),h=this),typeof v=="object"&&v?(a.call(f,v)<0&&f.push(h=v),p=f.length,d=a.call(l,v),d<0?(d=l.push(v)-1,o?(u.push((""+e).replace(s,r)),c[d]=n+u.join(n)):c[d]=c[0]):v=c[d]):typeof v=="string"&&o&&(v=v.replace(r,i).replace(n,r))),v}}function c(e,t){for(var r=0,i=t.length;r<i;e=e[t[r++].replace(o,n)]);return e}function h(e){return function(t,s){var o=typeof s=="string";return o&&s.charAt(0)===n?new f(s.slice(1)):(t===""&&(s=v(s,s,{})),o&&(s=s.replace(u,"$1"+n).replace(i,r)),e?e.call(this,t,s):s)}}function p(e,t,n){for(var r=0,i=t.length;r<i;r++)t[r]=v(e,t[r],n);return t}function d(e,t,n){for(var r in t)t.hasOwnProperty(r)&&(t[r]=v(e,t[r],n));return t}function v(e,t,r){return t instanceof Array?p(e,t,r):t instanceof f?t.length?r.hasOwnProperty(t)?r[t]:r[t]=c(e,t.split(n)):e:t instanceof Object?d(e,t,r):t}function m(t,n,r,i){return e.stringify(t,l(t,n,!i),r)}function g(t,n){return e.parse(t,h(n))}var n="~",r="\\x"+("0"+n.charCodeAt(0).toString(16)).slice(-2),i="\\"+r,s=new t(r,"g"),o=new t(i,"g"),u=new t("(?:^|([^\\\\]))"+i),a=[].indexOf||function(e){for(var t=this.length;t--&&this[t]!==e;);return t},f=String;return{stringify:m,parse:g}}(JSON,RegExp);
+
 var apiUrl = './api/v1/'
 
 /**
@@ -11,7 +14,23 @@ Vue.transition('show', {
 })
 Vue.filter('flatten', function (value) {
 	return _.flatten(value)
-})
+});
+
+(function (exports) {
+	'use strict';
+	var STORAGE_KEY = 'tarzan';
+	exports.storage = {
+		fetch: function (item_name, init_object) {
+			var json = JSON.parse(localStorage.getItem(STORAGE_KEY + ':' + item_name))
+			if (json == null) json = this.save(item_name, init_object)
+			return json
+		},
+		save: function (item_name, object) {
+			localStorage.setItem(STORAGE_KEY + ':' + item_name, CircularJSON.stringify(object));
+			return object
+		}
+	};
+})(window);
 
 
 /**
@@ -116,7 +135,7 @@ App.dashboard = Vue.extend({
 	},
 	components: {loader: App.loader},
 	data: function () {
-		return {
+		return storage.fetch('dashboard', {
 			tab: {
 				'market-value': 'today',
 				'categories-value': 'today',
@@ -124,7 +143,7 @@ App.dashboard = Vue.extend({
 				'bestselling': 'today'
 			},
 
-			selectedCategory: '',
+			selectedCategory: 'Wedding',
 			selectedBestSellingMethod: '',
 			selectedBestSellingCategory: '',
 			selectedGroup: '',
@@ -145,7 +164,7 @@ App.dashboard = Vue.extend({
 				'categories-value': {},
 				'group-value': {}
 			}
-		}
+		})
 	},
 	methods: {
 		/**
@@ -162,7 +181,6 @@ App.dashboard = Vue.extend({
 				}
 
 				self.categories = response.list
-				self.selectedCategory = self.categories[0]
 			})
 		},
 
@@ -180,9 +198,6 @@ App.dashboard = Vue.extend({
 				}
 
 				self.groups = response.list
-				if (self.groups.length>0) {
-					self.selectedGroup = self.groups[0].id
-				}
 			})
 		},
 
@@ -251,8 +266,11 @@ App.dashboard = Vue.extend({
 
 				// Clear and Render Canvas
 				self.loader[chart] = false
-				if (canvas.chart) canvas.chart.destroy()
-				if (canvas.chart) canvas.chart.destroy()
+				if (canvas.chart) {
+					if (canvas.chart.destroy) canvas.chart.destroy()
+					canvas.chart = null
+				}
+
 				canvas.chart = new Chart(canvas.context, {
 					type: 'line',
 					data: canvas.data,
@@ -280,9 +298,9 @@ App.dashboard = Vue.extend({
 		 * @return {void}
 		 */
 		viewMarketValue: function (chart, date) {
-			this.getMarketValue(chart, date)
-			this.loader[chart] = true
 			this.tab[chart] = date
+			this.loader[chart] = true
+			this.getMarketValue(chart, date)
 		},
 
 		/**
@@ -312,7 +330,10 @@ App.dashboard = Vue.extend({
 					canvas.data.labels.push(item.label)
 				})
 
-				if (canvas.chart) canvas.chart.destroy()
+				if (canvas.chart) {
+					if (canvas.chart.destroy) canvas.chart.destroy()
+					canvas.chart = null
+				}
 				canvas.chart = new Chart(canvas.context, {
 					type: 'pie',
 					data: canvas.data,
@@ -377,9 +398,15 @@ App.dashboard = Vue.extend({
 		this.getTagStats()
 		this.getBestSelling()
 
-		this.$watch('selectedCategory', function () {
-			this.viewMarketValue('categories-value', this.tab['categories-value'])
+		var self = this
+		_.each(this.$data, function (data, key) {
+			self.$watch(key, function (item) {
+				storage.save('dashboard', self.$data)
+			})
 		})
+		/*this.$watch('selectedCategory', function () {
+			this.viewMarketValue('categories-value', this.tab['categories-value'])
+		})*/
 
 		this.$watch('selectedGroup', function () {
 			this.viewMarketValue('group-value', this.tab['group-value'])
@@ -655,7 +682,7 @@ App.item = {
 	 */
 	list: Vue.extend({
 		template: '#item-list',
-		components: {wrapper: App.wrapper, 'group-selector': App.groupSelector},
+		components: {wrapper: App.wrapper, 'group-selector': App.groupSelector, loader: App.loader},
 		route: {
 			canReuse: false,
 			data: function () {
@@ -671,21 +698,34 @@ App.item = {
 				checkedList: [],
 				groupSelector: false,
 				paginationLoaded: false,
-				pagination: {items: 0, itemsOnPage: 100}
+				pagination: {items: 0, itemsOnPage: 100},
+				currentOffset: 0,
+				currentSort: 'created',
+				currentOrder: 'desc',
+				sort: {
+					category: '',
+					price: '',
+					created: 'desc',
+					weeksales: '',
+					sales: ''
+				}
 			}
 		},
 
 		methods: {
-			fetch: function (offset) {
-				var self = this
-				offset = (offset)? offset: 0
+			fetch: function () {
+				var self = this,
+				offset = this.currentOffset || 0,
+				sort = this.currentSort || '',
+				order = this.currentOrder || ''
 
-				return $.getJSON(apiUrl.concat('list/item'), {offset: offset}).then(function (response) {
-					if (response.error) {
-						alert(response.message)
-						return
-					}
-
+				// Change sales to sales.value
+				if (sort === 'sales') sort = 'sales.value'
+					
+				// Get JSON
+				this.$set('list', null)
+				return $.getJSON(apiUrl.concat('list/item'), {offset: offset, sort: sort, order: order}).then(function (response) {
+					if (response.error) { alert(response.message); return }
 					self.pagination.items = response.total
 					response.list = _.map(response.list, function (item, index) {
 						item.created = renderDate(item.created)
@@ -704,21 +744,24 @@ App.item = {
 			},
 
 			getPage: function (offset) {
-				this.fetch(offset).then(this.changedPage)
+				this.$set('currentOffset', offset)
+				this.fetch().then(this.changedPage)
 			},
 
 			prevPage: function (event) {
 				var offset = this.pagination.current - 1
-
 				offset = (offset <= 0)? 0: offset
-				this.fetch(offset).then(this.changedPage)
+
+				this.$set('currentOffset', offset)
+				this.fetch().then(this.changedPage)
 			},
 
 			nextPage: function (event) {
 				var offset = this.pagination.current + 1
-
 				offset = (offset >= this.pagination.total)? this.pagination.total - 1: offset
-				this.fetch(offset).then(this.changedPage)
+
+				this.$set('currentOffset', offset)
+				this.fetch().then(this.changedPage)
 			},
 
 			checkAll: function () {
@@ -783,11 +826,32 @@ App.item = {
 				_.each(_.unique(self.checkedList), function (item) {
 					queues.push(item)
 				})
+			},
+
+			star: function (item_id, subscribed) {
+				this.checkedList = []
+				this.checkedList.push(item_id)
+
+				if (!subscribed) {
+					this.groupSelector = true
+				} else {
+					this.subunsub(false)
+					this.checkedList = []
+				}
+			},
+
+			sorting: function (type) {
+				if (this.sort[type] === '' || this.sort[type] === 'asc') {
+					this.$set('sort.' + type, 'desc')
+				} else {
+					this.$set('sort.' + type, 'asc')
+				}
+
+				// Caching current sort
+				this.$set('currentSort', type)
+				this.$set('currentOrder', this.sort[type])
+				this.fetch().then(this.changedPage)
 			}
-		},
-
-		activate: function () {
-
 		},
 
 		ready: function () {
@@ -1000,36 +1064,33 @@ App.subscribe.list = Vue.extend({
 		return {
 			allChecked: {},
 			checkedList: {},
+			currentSort: 'created',
+			currentOrder: 'desc',
+			sort: {
+				category: '',
+				price: '',
+				created: 'desc',
+				weeksales: '',
+				sales: ''
+			},
 			list: null
 		}
-	},
-	ready: function () {
-		this.fetch()
 	},
 	methods: {
 		fetch: function () {
 			var self = this
+			this.$set('list', null)
 			return $.getJSON(apiUrl.concat('list/subscribe/group'), function (response) {
 				if (response.error) { alert(response.message); return }
 
 				var groups = {}, checkedList = {}
 				_.each(response.list, function (item, index) {
 					groups[item.id] = item
-					groups[item.id].items = []
+					groups[item.id].expanded = (index>0)? false: true
+					groups[item.id].items = null
 					checkedList[item.name] = []
-				})
-
-				$.getJSON(apiUrl.concat('list/subscribe'), function (response) {
-					if (response.error) { alert(response.message); return }
-
-					_.each(response.list, function (item, index) {
-						//self.checkedList[item.name] = []
-						item.created = renderDate(item.created)
-						_.each(item.subscribe_group_id, function (_item, _index) {
-							if (groups[_item]) {
-								groups[_item].items.push(item)
-							}
-						})
+					self.fetchItem(item.id, function (response) {
+						groups[item.id].items = response
 					})
 				})
 
@@ -1038,6 +1099,38 @@ App.subscribe.list = Vue.extend({
 				})
 
 				return groups
+			})
+		},
+
+		fetchItem: function (group_id, cb) {
+			var self = this,
+			sort = this.currentSort || '',
+			order = this.currentOrder || ''
+			$.getJSON(apiUrl.concat('list/subscribe'), {in: group_id, sort: sort, order: order}, function (response) {
+				if (response.error) { alert(response.message); return }
+				if (response.list) {
+					response.list = response.list.map(function (item) {
+						item.created = renderDate(item.created)
+						return item
+					})
+					cb(response.list)
+				}
+			})
+		},
+
+		sorting: function (type, index) {
+			if (this.sort[type] === '' || this.sort[type] === 'asc') {
+				this.$set('sort.' + type, 'desc')
+			} else {
+				this.$set('sort.' + type, 'asc')
+			}
+
+			// Caching current sort
+			var self = this, group = self.list[index]
+			this.$set('currentSort', type)
+			this.$set('currentOrder', this.sort[type])
+			this.fetchItem(group.id, function (response) {
+				group.items = response
 			})
 		},
 
@@ -1050,6 +1143,28 @@ App.subscribe.list = Vue.extend({
 				}
 			}
 		},
+
+		unsub: function (name) {
+			var self = this,
+			queues = async.queue(function (item_id, callback) {
+				$.post(apiUrl.concat('unsubscribe'), {item_id: item_id})
+				.then(function (response) {
+					if (!response.error) {
+						$('[data-row-id="'+ item_id +'"]').remove()
+					}
+					callback()
+				})
+			}, 5)
+
+			queues.drain = function () {
+				self.checkedList[name] = []
+				self.allChecked[name] = false
+			}
+
+			_.each(_.unique(self.checkedList[name]), function (item) {
+				queues.push(item)
+			})
+		}
 	}
 });
 
@@ -1179,7 +1294,7 @@ App.subscribe.editGroup = Vue.extend({
 
 App.search = Vue.extend({
 	template: '#search',
-	components: {wrapper: App.wrapper, 'group-selector': App.groupSelector},
+	components: {wrapper: App.wrapper, 'group-selector': App.groupSelector, loader: App.loader},
 	route: {
 		canReuse: false,
 		waitForData: true,
@@ -1215,7 +1330,17 @@ App.search = Vue.extend({
 			list: null,
 			total: 0,
 			params: null,
-			pagination: {items: 0, itemsOnPage: 100} 
+			pagination: {items: 0, itemsOnPage: 100},
+			currentOffset: 0,
+			currentSort: 'created',
+			currentOrder: 'desc',
+			sort: {
+				category: '',
+				price: '',
+				created: 'desc',
+				weeksales: '',
+				sales: ''
+			}
 		}
 	},
 	methods: {
@@ -1230,14 +1355,15 @@ App.search = Vue.extend({
 			})
 		},
 
-		fetch: function (offset) {
-			if (offset === undefined) return
-			var self = this
-			$.post(apiUrl.concat('search', '?offset=', offset), {search: self.params}).then(function (response) {
-				if (response.error) {
-					alert(response.message)
-					return
-				}
+		fetch: function () {
+			var self = this,
+			offset = this.currentOffset || 0,
+			sort = this.currentSort || '',
+			order = this.currentOrder || ''
+
+			this.$set('list', null)
+			$.post(apiUrl.concat('search', '?offset=', offset, '&sort=', sort, '&order=', order), {search: self.params}).then(function (response) {
+				if (response.error) { alert(response.message); return }
 
 				self.waiting = false
 				self.list = _.map(response.list, function (item) {
@@ -1254,7 +1380,8 @@ App.search = Vue.extend({
 					})
 
 					pagination.UIkit.on('select.uk.pagination', function(e, index) {
-						self.fetch(index)
+						self.$set('currentOffset', index)
+						self.fetch()
 					})
 
 					self.$root.paginationSearch = true
@@ -1336,6 +1463,31 @@ App.search = Vue.extend({
 			_.each(_.unique(self.checkedList), function (item) {
 				queues.push(item)
 			})
+		},
+
+		star: function (item_id, subscribed) {
+			this.checkedList = []
+			this.checkedList.push(item_id)
+
+			if (!subscribed) {
+				this.groupSelector = true
+			} else {
+				this.subunsub(false)
+				this.checkedList = []
+			}
+		},
+
+		sorting: function (type) {
+			if (this.sort[type] === '' || this.sort[type] === 'asc') {
+				this.$set('sort.' + type, 'desc')
+			} else {
+				this.$set('sort.' + type, 'asc')
+			}
+
+			// Caching current sort
+			this.$set('currentSort', type)
+			this.$set('currentOrder', this.sort[type])
+			this.fetch()
 		},
 
 		search: function () {	

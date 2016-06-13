@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"reflect"
 	"strings"
+	"time"
 )
 
 func CategoryList (c echo.Context) error {
@@ -266,7 +267,7 @@ func Search (c echo.Context) error {
 		total, _ := collection.Find(search).Count()
 
 		// Iterate all list
-		find := collection.Find(search).Select(bson.M{
+		/*find := collection.Find(search).Select(bson.M{
 			"_id": true,
 			"item_id": true,
 			"url": true,
@@ -277,12 +278,81 @@ func Search (c echo.Context) error {
 			"subscribed": true,
 			"price": true,
 			"sales": bson.M{"$slice": -1},
-		}).Limit(limit).Skip(offset)
+		}).Limit(limit).Skip(offset)*/
+
+		// Sort
+		sortby := c.QueryParam("sort")
+		sortorder := c.QueryParam("order")
+		sortorder_int := 1
+		if sortorder == "desc" {
+			sortorder_int = -1
+		}
+
+		sort := bson.M{}
+		if sortby != "" {
+			if sortby == "sales" {
+				sortby = "sales.value"
+			}
+			sort[sortby] = sortorder_int
+		} else {
+			sort["created"] = -1
+		}
+		
+		// Iterate all list
+		now := time.Now().In(time.Local)
+		format_date := "02/01/2006"
+		start_date := int32(now.AddDate(0, 0, -8).Unix())
+		end_date := int32(now.Unix())
+
+		aggregate := collection.Pipe([]bson.M{
+			bson.M{
+				"$project": bson.M{
+					"_id": 1,
+					"item_id": 1,
+					"url": 1,
+					"author": 1,
+					"title": 1,
+					"category": 1,
+					"price": 1,
+					"created": 1,
+					"subscribed": 1,
+					"weeksales": bson.M{
+						"$filter": bson.M{
+							"input": "$sales",
+							"as": "sales",
+							"cond": bson.M{
+								"$and": []bson.M{
+									bson.M{"$gt": []interface{}{"$$sales.date", start_date}},
+									bson.M{"$lte": []interface{}{"$$sales.date", end_date}},
+								},
+							},
+						},
+					},
+					"sales": bson.M{"$slice": []interface{}{"$sales", -1}},
+				},
+			},
+			bson.M{ "$match": search },
+			bson.M{ "$unwind": "$sales" },
+			bson.M{	"$sort": sort },
+			bson.M{	"$skip": offset },
+			bson.M{ "$limit": limit },
+		})
 		
 		// Get items
-		var result []ItemViewSearch
-		iterate := find.Iter()
-		err := iterate.All(&result)
+		var result []Item
+		err := aggregate.Iter().All(&result)
+
+		// Count week sales
+		for i := range result {
+			sales_series_item := SalesSeries{result[i].Weeksales, result[i].Price}
+			sales_series := get_sales_from_series(sales_series_item, tf_timezone_str, format_date)
+
+			count := int32(0)
+			for _, v := range sales_series {
+				count += int32(reflect.ValueOf(v).MapIndex(reflect.ValueOf("sales")).Elem().Int())
+			}
+			result[i].WeeksalesData = count
+		}
 
 		// Send response
 		if err == nil {

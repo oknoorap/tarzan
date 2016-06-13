@@ -98,6 +98,10 @@ hr {
     border-color: #F1F1F1;
 }
 
+th a, th a:hover {
+	color: black;
+}
+
 .uk-form.uk-form-horizontal {
 	margin-top: 20px;
 }

@@ -37,10 +37,8 @@ func MarketValue (c echo.Context) error {
 			format_date string
 		)
 
-		tf_timezone_str := "Australia/Melbourne"
-		local_str := "America/New_York"
-		local, _ := time.LoadLocation(local_str)
 		date := c.QueryParam("date")
+		local, _ := time.LoadLocation(local_str)
 		now := time.Now().In(time.Local)
 		end_date := int32(now.Unix())
 		year, month, day := now.Date()
@@ -48,12 +46,16 @@ func MarketValue (c echo.Context) error {
 		if date == "today" {
 			format_date = "02/01/2006 15:00 PM"
 			start_date = int32(time.Date(year, month, day, 0, 0, 0, 0, local).Unix())
+		} else if date == "yesterday" {
+			format_date = "02/01/2006 15:00 PM"
+			start_date = int32(time.Date(year, month, day, 0, 0, 0, 0, local).AddDate(0, 0, -1).Unix())
 		} else if date == "week" {
 			format_date = "02/01/2006"
-			start_date = int32(now.AddDate(0, 0, -8).Unix())
+			start_date = int32(time.Date(year, month, day, 0, 0, 0, 0, local).AddDate(0, 0, -7).Unix())
 		} else if date == "month" {
 			format_date = "02/01/2006"
-			start_date = int32(time.Date(year, month, 1, -1, 0, 0, 0, local).Unix())
+			start_date = int32(time.Date(year, month, 1, 0, 0, 0, 0, local).AddDate(0, 0, -1).Unix())
+			log.Println(start_date)
 		} else if date == "lastmonth" {
 			format_date = "02/01/2006"
 			_, m, _ := now.AddDate(0, -1, 0).Date()
@@ -133,24 +135,34 @@ func MarketValue (c echo.Context) error {
 			method := c.QueryParam("method")
 			if method != "" {
 
-				date_range := ""
+				var start_date, end_date time.Time
 				timezone, _ := time.LoadLocation(tf_timezone_str)
+				today := time.Date(year, month, day, 0, 0, 0, 0, timezone)
+				this_month := time.Date(year, month, 1, 0, 0, 0, 0, timezone)
 
 				if date == "today" {
-					date_range = now.AddDate(0, 0, -1).In(timezone).Format("2006-01-02")
+					start_date = today
+					end_date = now
+				} else if date == "yesterday" {
+					start_date = today.AddDate(0, 0, -1)
+					end_date = today
 				} else if date == "week" {
-					date_range = now.AddDate(0, 0, -8).In(timezone).Format("2006-01-02")
+					start_date = today.AddDate(0, 0, -7)
+					end_date = today
 				} else if date == "month" {
-					date_range = time.Date(year, month, 1, -1, 0, 0, 0, timezone).Format("2006-01-02")
+					start_date = this_month
+					end_date = today
 				} else if date == "lastmonth" {
-					_, month, _ := now.AddDate(0, -1, 0).Date()
-					date_range = time.Date(year, month, 1, -1, 0, 0, 0, timezone).Format("2006-01-02")
+					start_date = this_month.AddDate(0, -1, 0)
+					end_date = this_month
 				} else if date == "year" {
-					date_range = time.Date(year, 0, 0, 0, 0, 0, 0, timezone).Format("2006-01-02")
+					start_date = time.Date(year, 0, 0, 0, 0, 0, 0, timezone)
+					end_date = today
 				}
 
 				match_query["created"] = bson.M{
-					"$gte": date_range,
+					"$gte": start_date.In(timezone).Format("2006-01-02"),
+					"$lt": end_date.In(timezone).Format("2006-01-02"),
 				}
 			}
 
@@ -171,7 +183,7 @@ func MarketValue (c echo.Context) error {
 
 		// Iterate all list
 		// db.item.aggregate([])
-		aggregate := collection.Pipe([]bson.M{project, match, sort, bson.M{"$limit": limit}})
+		aggregate := collection.Pipe([]bson.M{project, match, sort, bson.M{"$limit": limit}}).AllowDiskUse()
 
 		if bestselling == "" {
 			var result []SalesSeries

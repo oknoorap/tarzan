@@ -378,15 +378,33 @@ func SubscribeList (c echo.Context) error {
 		// Pick MongoDB collection
 		collection := dbSession.DB("tarzan").C("item")
 
+		// Sort
+		sortby := c.QueryParam("sort")
+		sortorder := c.QueryParam("order")
+		sortorder_int := 1
+		if sortorder == "desc" {
+			sortorder_int = -1
+		}
+
+		sort := bson.M{}
+		if sortby != "" {
+			sort[sortby] = sortorder_int
+		} else {
+			sort["created"] = -1
+		}
+
 		// Iterate all list
-		//db.item.aggregate([{ $match: {subscribed: true}}, {$project: {_id: 1, item_id: 1, url: 1, author: 1, title: 1, created: 1, sales: {$slice: ["$sales", -1]}, subscribe_group_id: 1, subscribed: 1}}])
+		in := c.QueryParam("in")
+		in_array := []interface{}{in}
 		aggregate := collection.Pipe([]bson.M{
 			bson.M{
 				"$project": bson.M{
 					"_id": 1,
 					"item_id": 1,
 					"url": 1,
-					"author:": 1,
+					"author": 1,
+					"price": 1,
+					"category": 1,
 					"title": 1,
 					"created": 1,
 					"subscribed": 1,
@@ -399,8 +417,11 @@ func SubscribeList (c echo.Context) error {
 			bson.M{
 				"$match": bson.M{
 					"subscribed": true,
+					"subscribe_group_id": bson.M{"$in": in_array},
 				},
 			},
+			bson.M{	"$sort": sort },
+			bson.M{"$unwind": "$sales"},
 			bson.M{"$limit": 500},
 		})
 
