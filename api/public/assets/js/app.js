@@ -145,9 +145,9 @@ App.dashboard = Vue.extend({
 			bestselling: null,
 			bestSellingView: 'list',
 			tab: {
-				marketValue: 'today',
-				bestselling: 'today',
-				groupValue: 'today',
+				marketValue: 'week',
+				bestselling: 'week',
+				groupValue: 'week',
 			},
 			loader: {
 				bestselling: false,
@@ -931,7 +931,7 @@ App.item = {
 		},
 		data: function () {
 			return {
-				tab: 'today',
+				tab: 'week',
 				totalRevenue: 0,
 				totalSales: 0,
 				canvas: {},
@@ -1069,7 +1069,7 @@ App.item = {
 		},
 
 		ready: function () {
-			this.getMarketValue('today', this.item_id)
+			this.getMarketValue('week', this.item_id)
 			this.getImgPreview()
 		}
 	})
@@ -1741,7 +1741,7 @@ App.init = Vue.extend({
 				{icon: 'dashboard', 'path': '/', label: 'Dashboard'},
 				{icon: 'rss', 'path': '/page', label: 'Watcher'},
 				{icon: 'file-o', 'path': '/item', label: 'Item List'},
-				{icon: 'bookmark-o', 'path': '/subscribe', label: 'Subscribes'},
+				{icon: 'bookmark-o', 'path': '/subscribe', label: 'Subscription'},
 				{icon: 'search', 'path': '/search', label: 'Advanced Search'},
 			]
 		}

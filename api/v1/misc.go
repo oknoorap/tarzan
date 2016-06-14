@@ -337,6 +337,9 @@ func Search (c echo.Context) error {
 			for _, v := range sales_series {
 				count += int32(reflect.ValueOf(v).MapIndex(reflect.ValueOf("sales")).Elem().Int())
 			}
+			if count < 0 {
+				count = 0
+			}
 			result[i].WeeksalesData = count
 		}
 
