@@ -156,7 +156,7 @@
 									<th>Title</th>
 									<th style="width:130px">Category</th>
 									<th style="width:60px">Price</th>
-									<th style="width:90px">Sales to date</th>
+									<th style="width:90px" v-if="selectedBestSellingMethod===''">Sales to date</th>
 									<th style="width:20px">Sales</th>
 								<tr>
 							</thead>
@@ -168,7 +168,7 @@
 									</td>
 									<td>${item.category}</td>
 									<td>${'$' + item.price}</td>
-									<td style="text-align:center">${item.total}</td>
+									<td style="text-align:center" v-if="selectedBestSellingMethod===''">${item.total}</td>
 									<td style="text-align:center">${item.total_sales.value}</td>
 								</tr>
 							</tbody>
