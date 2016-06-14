@@ -55,7 +55,6 @@ func MarketValue (c echo.Context) error {
 		} else if date == "month" {
 			format_date = "02/01/2006"
 			start_date = int32(time.Date(year, month, 1, 0, 0, 0, 0, local).AddDate(0, 0, -1).Unix())
-			log.Println(start_date)
 		} else if date == "lastmonth" {
 			format_date = "02/01/2006"
 			_, m, _ := now.AddDate(0, -1, 0).Date()
@@ -175,6 +174,7 @@ func MarketValue (c echo.Context) error {
 			project_query["img_preview"] = 1
 			project_query["category"] = 1
 			project_query["created"] = 1
+			project_query["total_sales"] = bson.M{"$slice": []interface{}{"$sales", -1}}
 		}
 
 
@@ -182,8 +182,17 @@ func MarketValue (c echo.Context) error {
 		project := bson.M{"$project": project_query}
 
 		// Iterate all list
-		// db.item.aggregate([])
-		aggregate := collection.Pipe([]bson.M{project, match, sort, bson.M{"$limit": limit}}).AllowDiskUse()
+		pipe := []bson.M{}
+		pipe = append(pipe, project)
+		pipe = append(pipe, match)
+		pipe = append(pipe, sort)
+		pipe = append(pipe, bson.M{"$limit": limit})
+
+		if bestselling != "" {
+			pipe = append(pipe, bson.M{"$unwind": "$total_sales"})
+		}
+
+		aggregate := collection.Pipe(pipe).AllowDiskUse()
 
 		if bestselling == "" {
 			var result []SalesSeries
@@ -264,6 +273,7 @@ func MarketValue (c echo.Context) error {
 							"category": item["category"],
 							"author": item["author"],
 							"created": item["created"],
+							"total_sales": item["total_sales"],
 							"total": sales_total,
 						}
 					}

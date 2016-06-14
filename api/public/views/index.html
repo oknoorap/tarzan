@@ -86,19 +86,31 @@
 	<section class="uk-grid" id="market-value-wrapper">
 		<div class="uk-width-1-1">
 			<h2>Market Value</h2>
-			<ul class="uk-subnav uk-subnav-pill">
-				<li :class="{'uk-active': tab['market-value'] === 'today'}"><a @click="viewMarketValue('market-value', 'today')">Today</a></li>
-				<li :class="{'uk-active': tab['market-value'] === 'yesterday'}"><a @click="viewMarketValue('market-value', 'yesterday')">Yesterday</a></li>
-				<li :class="{'uk-active': tab['market-value'] === 'week'}"><a @click="viewMarketValue('market-value', 'week')">Last 7 Days</a></li>
-				<li :class="{'uk-active': tab['market-value'] === 'month'}"><a @click="viewMarketValue('market-value', 'month')">This Month</a></li>
-				<li :class="{'uk-active': tab['market-value'] === 'lastmonth'}"><a @click="viewMarketValue('market-value', 'lastmonth')">Last Month</a></li>
-				<li :class="{'uk-active': tab['market-value'] === 'year'}"><a @click="viewMarketValue('market-value', 'year')">This Year</a></li>
-			</ul>
+
+			<div class="uk-grid uk-grid-collapse">
+				<div class="uk-width-6-10">
+					<ul class="uk-subnav uk-subnav-pill">
+						<li :class="{'uk-active': tab.marketValue === 'today'}"><a @click="tab.marketValue='today'">Today</a></li>
+						<li :class="{'uk-active': tab.marketValue === 'yesterday'}"><a @click="tab.marketValue='yesterday'">Yesterday</a></li>
+						<li :class="{'uk-active': tab.marketValue === 'week'}"><a @click="tab.marketValue='week'">Last 7 Days</a></li>
+						<li :class="{'uk-active': tab.marketValue === 'month'}"><a @click="tab.marketValue='month'">This Month</a></li>
+						<li :class="{'uk-active': tab.marketValue === 'lastmonth'}"><a @click="tab.marketValue='lastmonth'">Last Month</a></li>
+						<li :class="{'uk-active': tab.marketValue === 'year'}"><a @click="tab.marketValue='year'">This Year</a></li>
+					</ul>
+				</div>
+				<div class="uk-width-4-10 uk-form">
+					<select v-model="selectedCategory" class="uk-align-right">
+						<option value="">All Market</option>
+						<option v-for="category in categories" :value="category">${category}</option>
+					</select>
+				</div>
+			</div>
+			
 
 			<div class="uk-grid uk-grid-collapse">
 				<div class="uk-width-1-1">
-					<loader v-show="loader['market-value']"></loader>
-					<canvas v-show="!loader['market-value']" id="market-value" height="80"></canvas>
+					<loader v-show="loader.marketValue"></loader>
+					<canvas v-show="!loader.marketValue" id="marketValue" height="80"></canvas>
 				</div>
 			</div>
 		</div>
@@ -144,9 +156,10 @@
 							<thead>
 								<tr>
 									<th>Title</th>
-									<th>Category</th>
-									<th>Price</th>
-									<th style="width:50px">Sales</th>
+									<th style="width:130px">Category</th>
+									<th style="width:60px">Price</th>
+									<th style="width:90px">Sales to date</th>
+									<th style="width:20px">Sales</th>
 								<tr>
 							</thead>
 							<tbody>
@@ -157,7 +170,8 @@
 									</td>
 									<td>${item.category}</td>
 									<td>${'$' + item.price}</td>
-									<td>${item.total}</td>
+									<td style="text-align:center">${item.total}</td>
+									<td style="text-align:center">${item.total_sales.value}</td>
 								</tr>
 							</tbody>
 						</table>
@@ -185,49 +199,18 @@
 		</div>
 	</section>
 
-	<section class="uk-grid" id="categories-value-wrapper">
-		<div class="uk-width-1-1">
-			<h2>Market Value by Categories</h2>
-			<div class="uk-grid uk-grid-collapse">
-				<div class="uk-width-6-10">
-					<ul class="uk-subnav uk-subnav-pill">
-						<li :class="{'uk-active': tab['categories-value'] === 'today'}"><a @click="viewMarketValue('categories-value', 'today')">Today</a></li>
-						<li :class="{'uk-active': tab['categories-value'] === 'yesterday'}"><a @click="viewMarketValue('categories-value', 'yesterday')">Yesterday</a></li>
-						<li :class="{'uk-active': tab['categories-value'] === 'week'}"><a @click="viewMarketValue('categories-value', 'week')">Last 7 Days</a></li>
-						<li :class="{'uk-active': tab['categories-value'] === 'month'}"><a @click="viewMarketValue('categories-value', 'month')">This Month</a></li>
-						<li :class="{'uk-active': tab['categories-value'] === 'lastmonth'}"><a @click="viewMarketValue('categories-value', 'lastmonth')">Last Month</a></li>
-						<li :class="{'uk-active': tab['categories-value'] === 'year'}"><a @click="viewMarketValue('categories-value', 'year')">This Year</a></li>
-					</ul>
-				</div>
-				<div class="uk-width-4-10 uk-form">
-					<select v-model="selectedCategory" class="uk-align-right">
-						<option value="">Select Category</option>
-						<option v-for="category in categories" :value="category">${category}</option>
-					</select>
-				</div>
-			</div>
-
-			<div class="uk-grid uk-grid-collapse">
-				<div class="uk-width-1-1">
-					<loader v-show="loader['categories-value']"></loader>
-					<canvas v-show="!loader['categories-value']" id="categories-value" height="80"></canvas>
-				</div>
-			</div>
-		</div>
-	</section>
-
 	<section class="uk-grid" id="subscribe-stats-wrapper">
 		<div class="uk-width-1-1">
 			<h2>Subscription Stats</h2>
 			<div class="uk-grid uk-grid-collapse">
 				<div class="uk-width-6-10">
 					<ul class="uk-subnav uk-subnav-pill">
-						<li :class="{'uk-active': tab['group-value'] === 'today'}"><a @click="viewMarketValue('group-value', 'today')">Today</a></li>
-						<li :class="{'uk-active': tab['group-value'] === 'yesterday'}"><a @click="viewMarketValue('group-value', 'yesterday')">Yesterday</a></li>
-						<li :class="{'uk-active': tab['group-value'] === 'week'}"><a @click="viewMarketValue('group-value', 'week')">Last 7 Days</a></li>
-						<li :class="{'uk-active': tab['group-value'] === 'month'}"><a @click="viewMarketValue('group-value', 'month')">This Month</a></li>
-						<li :class="{'uk-active': tab['group-value'] === 'lastmonth'}"><a @click="viewMarketValue('group-value', 'lastmonth')">Last Month</a></li>
-						<li :class="{'uk-active': tab['group-value'] === 'year'}"><a @click="viewMarketValue('group-value', 'year')">This Year</a></li>
+						<li :class="{'uk-active': tab.groupValue === 'today'}"><a @click="tab.groupValue='today'">Today</a></li>
+						<li :class="{'uk-active': tab.groupValue === 'yesterday'}"><a @click="tab.groupValue='yesterday'">Yesterday</a></li>
+						<li :class="{'uk-active': tab.groupValue === 'week'}"><a @click="tab.groupValue='week'">Last 7 Days</a></li>
+						<li :class="{'uk-active': tab.groupValue === 'month'}"><a @click="tab.groupValue='month'">This Month</a></li>
+						<li :class="{'uk-active': tab.groupValue === 'lastmonth'}"><a @click="tab.groupValue='lastmonth'">Last Month</a></li>
+						<li :class="{'uk-active': tab.groupValue === 'year'}"><a @click="tab.groupValue='year'">This Year</a></li>
 					</ul>
 				</div>
 				<div class="uk-width-4-10 uk-form">
@@ -240,8 +223,8 @@
 
 			<div class="uk-grid uk-grid-collapse">
 				<div class="uk-width-1-1">
-					<loader v-show="loader['group-value']"></loader>
-					<canvas v-show="!loader['group-value']" id="group-value" height="80"></canvas>
+					<loader v-show="loader.groupValue"></loader>
+					<canvas v-show="!loader.groupValue" id="groupValue" height="80"></canvas>
 				</div>
 			</div>
 		</div>
@@ -252,7 +235,7 @@
 			<h2>Misc</h2>
 			<div class="uk-grid">
 				<div class="uk-width-5-10">
-					<canvas id="tag-stats" height="200" style="width:100%"></canvas>
+					<canvas id="tagStats" height="200" style="width:100%"></canvas>
 				</div>
 			</div>
 		</div>
@@ -388,12 +371,12 @@
 				<th style="width:130px"><a @click="sorting('category')"><i :class="{'uk-icon-sort': sort.category === '', 'uk-icon-sort-alpha-asc': sort.category === 'asc', 'uk-icon-sort-alpha-desc': sort.category === 'desc'}"></i> Category</a></th>
 				<th style="width:110px"><a @click="sorting('created')"><i :class="{'uk-icon-sort': sort.created === '', 'uk-icon-sort-amount-asc': sort.created === 'asc', 'uk-icon-sort-amount-desc': sort.created === 'desc'}"></i> Date Created</a></th>
 				<th style="width:60px"><a @click="sorting('price')"><i :class="{'uk-icon-sort': sort.price === '', 'uk-icon-sort-numeric-asc': sort.price === 'asc', 'uk-icon-sort-numeric-desc': sort.price === 'desc'}"></i> Price</a></th>
-				<th style="width:100px"><a @click="sorting('weeksales')"><i :class="{'uk-icon-sort': sort.weeksales === '', 'uk-icon-sort-numeric-asc': sort.weeksales === 'asc', 'uk-icon-sort-numeric-desc': sort.weeksales === 'desc'}"></i> Week Sales</a></th>
+				<th style="width:100px"><a @click="sorting('weeksales')"><i :class="{'uk-icon-sort': sort.weeksales === '', 'uk-icon-sort-numeric-asc': sort.weeksales === 'asc', 'uk-icon-sort-numeric-desc': sort.weeksales === 'desc'}"></i> 7 Days Sales</a></th>
 				<th style="width:60px"><a @click="sorting('sales')"><i :class="{'uk-icon-sort': sort.sales === '', 'uk-icon-sort-numeric-asc': sort.sales === 'asc', 'uk-icon-sort-numeric-desc': sort.sales === 'desc'}"></i> Sales</a></th>
 			<tr>
 		</thead>
 		<tbody>
-			<tr v-for="item in list|filterBy search">
+			<tr v-for="item in list|filterBy search|orderBy order.by order.sort">
 				<td><input type="checkbox" v-model="checkedList" :value="item.item_id"></td>
 				<td><a class="item-subscribe" :class="{subscribed: item.subscribed}" @click="star(item.item_id, item.subscribed)"></a></td>
 				<td>
@@ -401,7 +384,7 @@
 					<a href="http://themeforest.net/user/${item.author}/portfolio" class="item-author" target="_blank"><i class="uk-icon-user"></i> ${item.author}</a> - <a href="${item.url}" class="url" target="_blank">Visit Page <i class="uk-icon-external-link"></i></a>
 				</td>
 				<td>${item.category}</td>
-				<td style="text-align:center">${item.created}</td>
+				<td>${item.created}</td>
 				<td style="text-align:center">$${item.price}</td>
 				<td style="text-align:center">${item.weeksales}</td>
 				<td style="text-align:center">${item.sales.value}</td>
@@ -418,7 +401,7 @@
 		<div class="uk-width-1-1">
 			<ul class="uk-subnav uk-subnav-pill uk-flex-center">
 				<li :class="{'uk-active': tab === 'today'}"><a @click="viewMarketValue('today')">Today</a></li>
-				<li :class="{'uk-active': tab === 'today'}"><a @click="viewMarketValue('yesterday')">Yesterday</a></li>
+				<li :class="{'uk-active': tab === 'yesterday'}"><a @click="viewMarketValue('yesterday')">Yesterday</a></li>
 				<li :class="{'uk-active': tab === 'week'}"><a @click="viewMarketValue('week')">Last 7 Days</a></li>
 				<li :class="{'uk-active': tab === 'month'}"><a @click="viewMarketValue('month')">This Month</a></li>
 				<li :class="{'uk-active': tab === 'lastmonth'}"><a @click="viewMarketValue('lastmonth')">Last Month</a></li>
@@ -521,12 +504,12 @@
 						<th style="width:130px"><a @click="sorting('category', $index)"><i :class="{'uk-icon-sort': sort.category === '', 'uk-icon-sort-alpha-asc': sort.category === 'asc', 'uk-icon-sort-alpha-desc': sort.category === 'desc'}"></i> Category</a></th>
 						<th style="width:110px"><a @click="sorting('created', $index)"><i :class="{'uk-icon-sort': sort.created === '', 'uk-icon-sort-amount-asc': sort.created === 'asc', 'uk-icon-sort-amount-desc': sort.created === 'desc'}"></i> Date Created</a></th>
 						<th style="width:60px"><a @click="sorting('price', $index)"><i :class="{'uk-icon-sort': sort.price === '', 'uk-icon-sort-numeric-asc': sort.price === 'asc', 'uk-icon-sort-numeric-desc': sort.price === 'desc'}"></i> Price</a></th>
-						<th style="width:100px"><a @click="sorting('weeksales', $index)"><i :class="{'uk-icon-sort': sort.weeksales === '', 'uk-icon-sort-numeric-asc': sort.weeksales === 'asc', 'uk-icon-sort-numeric-desc': sort.weeksales === 'desc'}"></i> Week Sales</a></th>
+						<th style="width:100px"><a @click="sorting('weeksales', $index)"><i :class="{'uk-icon-sort': sort.weeksales === '', 'uk-icon-sort-numeric-asc': sort.weeksales === 'asc', 'uk-icon-sort-numeric-desc': sort.weeksales === 'desc'}"></i> 7 Days Sales</a></th>
 						<th style="width:60px"><a @click="sorting('sales', $index)"><i :class="{'uk-icon-sort': sort.sales === '', 'uk-icon-sort-numeric-asc': sort.sales === 'asc', 'uk-icon-sort-numeric-desc': sort.sales === 'desc'}"></i> Sales</a></th>
 					<tr>
 				</thead>
 				<tbody>
-					<tr v-for="item in group.items|filterBy search" data-row-id="${item.item_id}">
+					<tr v-for="item in group.items|filterBy search|orderBy order.by order.sort" data-row-id="${item.item_id}">
 						<td><input type="checkbox" v-model="checkedList[group.name]" :value="item.item_id"></td>
 						<td>
 							<a v-link="{path: '/item/' + item.id}" class="item-title">${item.title}</a>
@@ -534,9 +517,9 @@
 						</td>
 						<td>${item.category}</td>
 						<td>${item.created}</td>
-						<td>$${item.price}</td>
-						<td>${item.sales.value}</td>
-						<td>${item.sales.value}</td>
+						<td style="text-align:center">$${item.price}</td>
+						<td style="text-align:center">${item.weeksales}</td>
+						<td style="text-align:center">${item.sales.value}</td>
 					</tr>
 				</tbody>
 			</table>
@@ -727,12 +710,12 @@
 							<th style="width:130px"><a @click="sorting('category')"><i :class="{'uk-icon-sort': sort.category === '', 'uk-icon-sort-alpha-asc': sort.category === 'asc', 'uk-icon-sort-alpha-desc': sort.category === 'desc'}"></i> Category</a></th>
 							<th style="width:110px"><a @click="sorting('created')"><i :class="{'uk-icon-sort': sort.created === '', 'uk-icon-sort-amount-asc': sort.created === 'asc', 'uk-icon-sort-amount-desc': sort.created === 'desc'}"></i> Date Created</a></th>
 							<th style="width:60px"><a @click="sorting('price')"><i :class="{'uk-icon-sort': sort.price === '', 'uk-icon-sort-numeric-asc': sort.price === 'asc', 'uk-icon-sort-numeric-desc': sort.price === 'desc'}"></i> Price</a></th>
-							<th style="width:100px"><a @click="sorting('weeksales')"><i :class="{'uk-icon-sort': sort.weeksales === '', 'uk-icon-sort-numeric-asc': sort.weeksales === 'asc', 'uk-icon-sort-numeric-desc': sort.weeksales === 'desc'}"></i> Week Sales</a></th>
+							<th style="width:100px"><a @click="sorting('weeksales')"><i :class="{'uk-icon-sort': sort.weeksales === '', 'uk-icon-sort-numeric-asc': sort.weeksales === 'asc', 'uk-icon-sort-numeric-desc': sort.weeksales === 'desc'}"></i> 7 Days Sales</a></th>
 							<th style="width:60px"><a @click="sorting('sales')"><i :class="{'uk-icon-sort': sort.sales === '', 'uk-icon-sort-numeric-asc': sort.sales === 'asc', 'uk-icon-sort-numeric-desc': sort.sales === 'desc'}"></i> Sales</a></th>
 						<tr>
 					</thead>
 					<tbody>
-						<tr v-for="item in list">
+						<tr v-for="item in list|orderBy order.by order.sort">
 							<td><input type="checkbox" v-model="checkedList" :value="item.item_id"></td>
 							<td><a class="item-subscribe" :class="{subscribed: item.subscribed}" @click="star(item.item_id, item.subscribed)"></a></td>
 							<td>
@@ -741,9 +724,9 @@
 							</td>
 							<td>${item.category}</td>
 							<td>${item.created}</td>
-							<td>$${item.price}</td>
-							<td>${item.weeksales}</td>
-							<td>${item.sales.value}</td>
+							<td style="text-align:center">$${item.price}</td>
+							<td style="text-align:center">${item.weeksales}</td>
+							<td style="text-align:center">${item.sales.value}</td>
 						</tr>
 					</tbody>
 				</table>

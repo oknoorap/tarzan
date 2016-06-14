@@ -266,20 +266,6 @@ func Search (c echo.Context) error {
 		// Get total of results
 		total, _ := collection.Find(search).Count()
 
-		// Iterate all list
-		/*find := collection.Find(search).Select(bson.M{
-			"_id": true,
-			"item_id": true,
-			"url": true,
-			"author": true,
-			"title": true,
-			"created": true,
-			"category": true,
-			"subscribed": true,
-			"price": true,
-			"sales": bson.M{"$slice": -1},
-		}).Limit(limit).Skip(offset)*/
-
 		// Sort
 		sortby := c.QueryParam("sort")
 		sortorder := c.QueryParam("order")

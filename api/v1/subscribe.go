@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 	"log"
+	"reflect"
 	"net/http"
 )
 
@@ -388,10 +389,19 @@ func SubscribeList (c echo.Context) error {
 
 		sort := bson.M{}
 		if sortby != "" {
+			if sortby == "sales" {
+				sortby = "sales.value"
+			}
 			sort[sortby] = sortorder_int
 		} else {
 			sort["created"] = -1
 		}
+
+		// Iterate all list
+		now := time.Now().In(time.Local)
+		format_date := "02/01/2006"
+		start_date := int32(now.AddDate(0, 0, -8).Unix())
+		end_date := int32(now.Unix())
 
 		// Iterate all list
 		in := c.QueryParam("in")
@@ -409,6 +419,18 @@ func SubscribeList (c echo.Context) error {
 					"created": 1,
 					"subscribed": 1,
 					"subscribe_group_id": 1,
+					"weeksales": bson.M{
+						"$filter": bson.M{
+							"input": "$sales",
+							"as": "sales",
+							"cond": bson.M{
+								"$and": []bson.M{
+									bson.M{"$gt": []interface{}{"$$sales.date", start_date}},
+									bson.M{"$lte": []interface{}{"$$sales.date", end_date}},
+								},
+							},
+						},
+					},
 					"sales": bson.M{
 						"$slice": []interface{}{"$sales", -1},
 					},
@@ -420,13 +442,25 @@ func SubscribeList (c echo.Context) error {
 					"subscribe_group_id": bson.M{"$in": in_array},
 				},
 			},
-			bson.M{	"$sort": sort },
+			bson.M{"$sort": sort},
 			bson.M{"$unwind": "$sales"},
 			bson.M{"$limit": 500},
 		})
 
 		var result []ItemSubscribe
 		err := aggregate.Iter().All(&result)
+
+		// Count week sales
+		for i := range result {
+			sales_series_item := SalesSeries{result[i].Weeksales, result[i].Price}
+			sales_series := get_sales_from_series(sales_series_item, tf_timezone_str, format_date)
+
+			count := int32(0)
+			for _, v := range sales_series {
+				count += int32(reflect.ValueOf(v).MapIndex(reflect.ValueOf("sales")).Elem().Int())
+			}
+			result[i].WeeksalesData = count
+		}
 
 		// Send response
 		if err == nil {

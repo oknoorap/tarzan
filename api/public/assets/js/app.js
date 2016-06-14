@@ -136,14 +136,7 @@ App.dashboard = Vue.extend({
 	components: {loader: App.loader},
 	data: function () {
 		return storage.fetch('dashboard', {
-			tab: {
-				'market-value': 'today',
-				'categories-value': 'today',
-				'group-value': 'today',
-				'bestselling': 'today'
-			},
-
-			selectedCategory: 'Wedding',
+			selectedCategory: '',
 			selectedBestSellingMethod: '',
 			selectedBestSellingCategory: '',
 			selectedGroup: '',
@@ -151,18 +144,21 @@ App.dashboard = Vue.extend({
 			groups: [],
 			bestselling: null,
 			bestSellingView: 'list',
+			tab: {
+				marketValue: 'today',
+				bestselling: 'today',
+				groupValue: 'today',
+			},
 			loader: {
 				bestselling: false,
-				'tag-stats': false,
-				'market-value': false,
-				'categories-value': false,
-				'group-value': false
+				tagStats: false,
+				groupValue: false,
+				marketValue: false
 			},
 			canvas: {
-				'tag-stats': {},
-				'market-value': {},
-				'categories-value': {},
-				'group-value': {}
+				marketValue: {},
+				tagStats: {},
+				groupValue: {}
 			}
 		})
 	},
@@ -201,14 +197,27 @@ App.dashboard = Vue.extend({
 			})
 		},
 
+
+		getMarketValue: function () {
+			this.marketValueOf('marketValue')
+		},
+
+		getGroupValue: function () {
+			this.marketValueOf('groupValue')
+		},
+
 		/**
 		 * Get Market Value (All categories) by date
 		 * @param  {string} date
 		 * @return {void}
 		 */
-		getMarketValue: function (chart, date) {
-			var self = this, canvas = self.canvas[chart]
+		marketValueOf: function (chart) {
+			var self = this,
+			canvas = self.canvas[chart],
+			date = self.tab[chart],
+			endpoint = apiUrl.concat('dashboard/stats/market?date=', date)
 
+			self.loader[chart] = true
 			canvas.context = document.getElementById(chart).getContext('2d')
 			canvas.data = {
 				labels: [],
@@ -237,14 +246,13 @@ App.dashboard = Vue.extend({
 				}]
 			}
 
-			var endpoint = apiUrl.concat('dashboard/stats/market?date=', date)
-			if (chart === 'categories-value') {
-				if (self.selectedCategory !== '') {
-					endpoint = endpoint.concat('&category=', self.selectedCategory)
-				}
-			} else if (chart === 'group-value') {
+			if (chart === 'groupValue') {
 				if (self.selectedGroup !== '') {
 					endpoint = endpoint.concat('&group=', self.selectedGroup)
+				}
+			} else {
+				if (self.selectedCategory !== '') {
+					endpoint = endpoint.concat('&category=', self.selectedCategory)
 				}
 			}
 
@@ -265,7 +273,7 @@ App.dashboard = Vue.extend({
 				})
 
 				// Clear and Render Canvas
-				self.loader[chart] = false
+				self.loader[chart] = false				
 				if (canvas.chart) {
 					if (canvas.chart.destroy) canvas.chart.destroy()
 					canvas.chart = null
@@ -291,26 +299,14 @@ App.dashboard = Vue.extend({
 			})
 		},
 
-
-		/**
-		 * View market value
-		 * @param  {String} date
-		 * @return {void}
-		 */
-		viewMarketValue: function (chart, date) {
-			this.tab[chart] = date
-			this.loader[chart] = true
-			this.getMarketValue(chart, date)
-		},
-
 		/**
 		 * Tags Stats
 		 * @type {Object}
 		 */
 		getTagStats: function () {
-			var self = this, canvas = self.canvas['tag-stats']
+			var self = this, canvas = self.canvas.tagStats
 
-			canvas.context = document.getElementById('tag-stats').getContext('2d')
+			canvas.context = document.getElementById('tagStats').getContext('2d')
 			canvas.data = {
 				labels: [],
 				borderWidth: 1,
@@ -392,36 +388,69 @@ App.dashboard = Vue.extend({
 		}
 	},
 	ready: function () {
-		this.viewMarketValue('market-value', 'today')
-		this.getCategories()
-		this.getGroups()
-		this.getTagStats()
-		this.getBestSelling()
-
 		var self = this
-		_.each(this.$data, function (data, key) {
-			self.$watch(key, function (item) {
+
+		async.waterfall([
+			function (next) {
+				self.getCategories()
+				next()
+			},
+			function (next) {
+				self.getGroups()
+				next()
+			},
+			function (next) {
+				self.getTagStats()
+				next()
+			},
+			function (next) {
+				self.getMarketValue()
+				next()
+			},
+			function (next) {
+				self.getBestSelling()
+				next()
+			},
+			function (next) {
+				self.getGroupValue()
+				next()
+			}
+		])
+
+		self.$watch('tab.marketValue', function (value) {
+			self.getMarketValue()
+			storage.save('dashboard', self.$data)
+		})
+
+		self.$watch('tab.bestselling', function () {
+			self.getBestSelling()
+		})
+
+		self.$watch('tab.groupValue', function (value) {
+			self.getGroupValue()
+			storage.save('dashboard', self.$data)
+		})
+
+		self.$watch('selectedCategory', function () {
+			self.getMarketValue()
+		})
+
+		self.$watch('selectedGroup', function () {
+			self.getGroupValue()
+		})		
+
+		self.$watch('selectedBestSellingCategory', function () {
+			self.getBestSelling()
+		})
+
+		self.$watch('selectedBestSellingMethod', function () {
+			self.getBestSelling()
+		})
+
+		_.each(self.$data, function (data, key) {
+			self.$watch(key, function (item, index) {
 				storage.save('dashboard', self.$data)
 			})
-		})
-		/*this.$watch('selectedCategory', function () {
-			this.viewMarketValue('categories-value', this.tab['categories-value'])
-		})*/
-
-		this.$watch('selectedGroup', function () {
-			this.viewMarketValue('group-value', this.tab['group-value'])
-		})
-
-		this.$watch('tab.bestselling', function () {
-			this.getBestSelling()
-		})
-
-		this.$watch('selectedBestSellingCategory', function () {
-			this.getBestSelling()
-		})
-
-		this.$watch('selectedBestSellingMethod', function () {
-			this.getBestSelling()
 		})
 	}
 });
@@ -702,6 +731,10 @@ App.item = {
 				currentOffset: 0,
 				currentSort: 'created',
 				currentOrder: 'desc',
+				order: {
+					by: '',
+					sort: 1
+				},
 				sort: {
 					category: '',
 					price: '',
@@ -841,16 +874,25 @@ App.item = {
 			},
 
 			sorting: function (type) {
-				if (this.sort[type] === '' || this.sort[type] === 'asc') {
-					this.$set('sort.' + type, 'desc')
+				if (type === 'weeksales') {
+					this.$set('order.by', 'weeksales')
+					this.$set('order.sort', (this.order.sort === 1)? -1: 1)
+					
 				} else {
-					this.$set('sort.' + type, 'asc')
-				}
 
-				// Caching current sort
-				this.$set('currentSort', type)
-				this.$set('currentOrder', this.sort[type])
-				this.fetch().then(this.changedPage)
+					if (this.sort[type] === '' || this.sort[type] === 'asc') {
+						this.$set('sort.' + type, 'desc')
+					} else {
+						this.$set('sort.' + type, 'asc')
+					}
+
+					// Caching current sort
+					this.$set('order.by', '')
+					this.$set('order.sort', 1)
+					this.$set('currentSort', type)
+					this.$set('currentOrder', this.sort[type])
+					this.fetch().then(this.changedPage)
+				}
 			}
 		},
 
@@ -1066,6 +1108,10 @@ App.subscribe.list = Vue.extend({
 			checkedList: {},
 			currentSort: 'created',
 			currentOrder: 'desc',
+			order: {
+				by: '',
+				sort: 1
+			},
 			sort: {
 				category: '',
 				price: '',
@@ -1119,19 +1165,27 @@ App.subscribe.list = Vue.extend({
 		},
 
 		sorting: function (type, index) {
-			if (this.sort[type] === '' || this.sort[type] === 'asc') {
-				this.$set('sort.' + type, 'desc')
+			if (type === 'weeksales') {
+				this.$set('order.by', 'weeksales')
+				this.$set('order.sort', (this.order.sort === 1)? -1: 1)
+				
 			} else {
-				this.$set('sort.' + type, 'asc')
-			}
+				if (this.sort[type] === '' || this.sort[type] === 'asc') {
+					this.$set('sort.' + type, 'desc')
+				} else {
+					this.$set('sort.' + type, 'asc')
+				}
 
-			// Caching current sort
-			var self = this, group = self.list[index]
-			this.$set('currentSort', type)
-			this.$set('currentOrder', this.sort[type])
-			this.fetchItem(group.id, function (response) {
-				group.items = response
-			})
+				// Caching current sort
+				var self = this, group = self.list[index]
+				this.$set('order.by', '')
+				this.$set('order.sort', 1)
+				this.$set('currentSort', type)
+				this.$set('currentOrder', this.sort[type])
+				this.fetchItem(group.id, function (response) {
+					group.items = response
+				})
+			}
 		},
 
 		checkAll: function (name) {
@@ -1334,6 +1388,10 @@ App.search = Vue.extend({
 			currentOffset: 0,
 			currentSort: 'created',
 			currentOrder: 'desc',
+			order: {
+				by: '',
+				sort: 1
+			},
 			sort: {
 				category: '',
 				price: '',
@@ -1478,16 +1536,22 @@ App.search = Vue.extend({
 		},
 
 		sorting: function (type) {
-			if (this.sort[type] === '' || this.sort[type] === 'asc') {
-				this.$set('sort.' + type, 'desc')
+			if (type === 'weeksales') {
+				this.$set('order.by', 'weeksales')
+				this.$set('order.sort', (this.order.sort === 1)? -1: 1)
 			} else {
-				this.$set('sort.' + type, 'asc')
+				if (this.sort[type] === '' || this.sort[type] === 'asc') {
+					this.$set('sort.' + type, 'desc')
+				} else {
+					this.$set('sort.' + type, 'asc')
+				}
+				// Caching current sort
+				this.$set('order.by', '')
+				this.$set('order.sort', 1)
+				this.$set('currentSort', type)
+				this.$set('currentOrder', this.sort[type])
+				this.fetch()
 			}
-
-			// Caching current sort
-			this.$set('currentSort', type)
-			this.$set('currentOrder', this.sort[type])
-			this.fetch()
 		},
 
 		search: function () {	
