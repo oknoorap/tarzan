@@ -9,10 +9,19 @@ import (
 	"path"
 	"path/filepath"
 	"log"
+	"flag"
 	api "./v1"
 )
 
+
+var (
+	port = flag.String("port", "8080", "Webserver port")
+)
+
 func main () {
+	// Parsing flag
+	flag.Parse()
+
 	// Get CWD
 	cwd, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
@@ -79,5 +88,6 @@ func main () {
 	e.GET("/", Dashboard)
 
 	// Start server
-	e.Run(standard.New(":8080"))
+	log.Println("Start server at " + *port)
+	e.Run(standard.New(":" + *port))
 }
