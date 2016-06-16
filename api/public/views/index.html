@@ -73,8 +73,8 @@
 				<ul class="uk-subnav uk-subnav-pill" data-uk-scrollspy-nav="{closest: 'li', smoothscroll: {offset: 50}}">
 					<li class="uk-active"><a href="#market-value-wrapper">Market Value</a></li>
 					<li><a href="#best-selling-wrapper">Best Selling</a></li>
-					<li><a href="#categories-value-wrapper">Categories Value</a></li>
 					<li><a href="#subscribe-stats-wrapper">Subscription Stats</a></li>
+					<li><a href="#detheme-share-wrapper">deTheme Market Share</a></li>
 					<li><a href="#misc-wrapper">Misc</a></li>
 				</ul>
 			</div>
@@ -224,6 +224,22 @@
 					<canvas v-show="!loader.groupValue" id="groupValue" height="80"></canvas>
 				</div>
 			</div>
+		</div>
+	</section>
+
+	<section class="uk-grid" id="detheme-share-wrapper">
+		<div class="uk-width-1-1">
+			<h2>deTheme Market Share</h2>
+			<ul class="uk-subnav uk-subnav-pill">
+				<li :class="{'uk-active': tab.deTheme === 'yesterday'}"><a @click="tab.deTheme='yesterday'">Yesterday</a></li>
+				<li :class="{'uk-active': tab.deTheme === 'week'}"><a @click="tab.deTheme='week'">Last 7 Days</a></li>
+				<li :class="{'uk-active': tab.deTheme === 'month'}"><a @click="tab.deTheme='month'">This Month</a></li>
+				<li :class="{'uk-active': tab.deTheme === 'lastmonth'}"><a @click="tab.deTheme='lastmonth'">Last Month</a></li>
+				<li :class="{'uk-active': tab.deTheme === 'year'}"><a @click="tab.deTheme='year'">This Year</a></li>
+			</ul>
+
+			<loader v-show="loader.deTheme"></loader>
+			<canvas v-show="!loader.deTheme" id="deTheme" height="80"></canvas>
 		</div>
 	</section>
 

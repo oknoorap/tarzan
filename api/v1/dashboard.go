@@ -120,6 +120,14 @@ func MarketValue (c echo.Context) error {
 		}
 
 
+		// If request deTheme author
+		deTheme := c.QueryParam("detheme")
+		if deTheme != "" {
+			match_query["author"] = "deTheme"
+			project_query["author"] = 1
+		}
+
+
 		// If request contains category
 		bestselling := c.QueryParam("bestselling")
 		sort := bson.M{"$sort": bson.M{"created": 1}}
@@ -319,6 +327,7 @@ func MarketValue (c echo.Context) error {
 
 	return c.JSON(http.StatusOK, defaultResponse)
 }
+
 
 // Get item by given id
 func Tags (c echo.Context) error {

@@ -148,17 +148,20 @@ App.dashboard = Vue.extend({
 				marketValue: 'week',
 				bestselling: 'week',
 				groupValue: 'week',
+				deTheme: 'week'
 			},
 			loader: {
 				bestselling: false,
 				tagStats: false,
 				groupValue: false,
-				marketValue: false
+				marketValue: false,
+				deTheme: false
 			},
 			canvas: {
 				marketValue: {},
 				tagStats: {},
-				groupValue: {}
+				groupValue: {},
+				deTheme: {}
 			}
 		})
 	},
@@ -206,15 +209,25 @@ App.dashboard = Vue.extend({
 			this.marketValueOf('groupValue')
 		},
 
+		getDeThemeShare: function () {
+			var self = this
+			this.loader.deTheme = true
+			$.getJSON(apiUrl.concat('dashboard/stats/market?date=', this.tab.deTheme)).then(function (response) {
+				if (response.error) { alert(response.message); return }
+				self.marketValueOf('deTheme', orderDate(response.data))
+			})
+		},
+
 		/**
 		 * Get Market Value (All categories) by date
 		 * @param  {string} date
 		 * @return {void}
 		 */
-		marketValueOf: function (chart) {
+		marketValueOf: function (chart, marketValue) {
 			var self = this,
 			canvas = self.canvas[chart],
 			date = self.tab[chart],
+			chartType = 'line',
 			endpoint = apiUrl.concat('dashboard/stats/market?date=', date)
 
 			self.loader[chart] = true
@@ -222,6 +235,37 @@ App.dashboard = Vue.extend({
 			canvas.data = {
 				labels: [],
 				datasets: [{
+					symbol: '${val}',
+					data: [],
+					prices: [],
+					sales: []
+				}]
+			}
+
+			if (chart === 'groupValue') {
+				if (self.selectedGroup !== '') {
+					endpoint = endpoint.concat('&group=', self.selectedGroup)
+				}
+			}
+			else {
+				if (self.selectedCategory !== '') {
+					endpoint = endpoint.concat('&category=', self.selectedCategory)
+				}
+			}
+
+			if (chart === 'deTheme') {
+				endpoint = endpoint.concat('&detheme=1')
+				chartType = 'bar'
+				canvas.data.datasets[0] = _.extend(canvas.data.datasets[0], {
+					label: 'Market Share',
+					backgroundColor: "rgba(52, 152, 219, 0.2)",
+					borderColor: "rgba(52, 152, 219,1.0)",
+					borderWidth: 1,
+					hoverBackgroundColor: "rgba(41, 128, 185,0.4)",
+					hoverBorderColor: "rgba(41, 128, 185,1.0)",
+				})
+			} else {
+				canvas.data.datasets[0] = _.extend(canvas.data.datasets[0], {
 					label: "Revenue",
 					fill: true,
 					lineTension: 0.1,
@@ -240,20 +284,7 @@ App.dashboard = Vue.extend({
 					pointHoverBorderWidth: 2,
 					pointRadius: 5,
 					pointHitRadius: 10,
-					data: [],
-					prices: [],
-					sales: []
-				}]
-			}
-
-			if (chart === 'groupValue') {
-				if (self.selectedGroup !== '') {
-					endpoint = endpoint.concat('&group=', self.selectedGroup)
-				}
-			} else {
-				if (self.selectedCategory !== '') {
-					endpoint = endpoint.concat('&category=', self.selectedCategory)
-				}
+				})
 			}
 
 			$.getJSON(endpoint).then(function (response) {
@@ -265,9 +296,16 @@ App.dashboard = Vue.extend({
 				_.each(orderDate(response.data), function (item, date) {
 					if (count > 0) {
 						canvas.data.labels.push(date)
-						canvas.data.datasets[0].data.push(item.price)
 						canvas.data.datasets[0].prices.push(item.price)
 						canvas.data.datasets[0].sales.push(item.sales)
+
+						if (chart === 'deTheme') {
+							var percentage = (item.price / marketValue[date].price) * 100
+							canvas.data.datasets[0].symbol = '{val}%'
+							canvas.data.datasets[0].data.push(percentage)
+						} else {
+							canvas.data.datasets[0].data.push(item.price)
+						}
 					}
 					count++
 				})
@@ -280,17 +318,21 @@ App.dashboard = Vue.extend({
 				}
 
 				canvas.chart = new Chart(canvas.context, {
-					type: 'line',
+					type: chartType,
 					data: canvas.data,
 					options: {
 						//showAllTooltips: true,
 						tooltips: {
 							callbacks: {
 								label: function(item, data) {
-									return '$' + item.yLabel.toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, '$1,')
+									return data.datasets[item.datasetIndex].symbol.replace('{val}', item.yLabel.toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, '$1,'))
 								},
 								afterLabel: function (item, data) {
-									return data.datasets[item.datasetIndex].sales[item.index] + " Sales"
+									var dataIndex = data.datasets[item.datasetIndex]
+									if (!(/\%/g.test(dataIndex.symbol))) {
+										return dataIndex.sales[item.index] + " Sales"
+									}
+									return
 								}
 							}
 						}
@@ -412,6 +454,10 @@ App.dashboard = Vue.extend({
 				next()
 			},
 			function (next) {
+				self.getDeThemeShare()
+				next()
+			},
+			function (next) {
 				self.getGroupValue()
 				next()
 			}
@@ -428,6 +474,11 @@ App.dashboard = Vue.extend({
 
 		self.$watch('tab.groupValue', function (value) {
 			self.getGroupValue()
+			storage.save('dashboard', self.$data)
+		})
+
+		self.$watch('tab.deTheme', function (value) {
+			self.getDeThemeShare()
 			storage.save('dashboard', self.$data)
 		})
 
