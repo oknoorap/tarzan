@@ -235,37 +235,6 @@ App.dashboard = Vue.extend({
 			canvas.data = {
 				labels: [],
 				datasets: [{
-					symbol: '${val}',
-					data: [],
-					prices: [],
-					sales: []
-				}]
-			}
-
-			if (chart === 'groupValue') {
-				if (self.selectedGroup !== '') {
-					endpoint = endpoint.concat('&group=', self.selectedGroup)
-				}
-			}
-			else {
-				if (self.selectedCategory !== '') {
-					endpoint = endpoint.concat('&category=', self.selectedCategory)
-				}
-			}
-
-			if (chart === 'deTheme') {
-				endpoint = endpoint.concat('&detheme=1')
-				chartType = 'bar'
-				canvas.data.datasets[0] = _.extend(canvas.data.datasets[0], {
-					label: 'Market Share',
-					backgroundColor: "rgba(52, 152, 219, 0.2)",
-					borderColor: "rgba(52, 152, 219,1.0)",
-					borderWidth: 1,
-					hoverBackgroundColor: "rgba(41, 128, 185,0.4)",
-					hoverBorderColor: "rgba(41, 128, 185,1.0)",
-				})
-			} else {
-				canvas.data.datasets[0] = _.extend(canvas.data.datasets[0], {
 					label: "Revenue",
 					fill: true,
 					lineTension: 0.1,
@@ -284,7 +253,28 @@ App.dashboard = Vue.extend({
 					pointHoverBorderWidth: 2,
 					pointRadius: 5,
 					pointHitRadius: 10,
+					symbol: '${val}',
+					data: [],
+					prices: [],
+					sales: []
+				}]
+			}
+
+			if (chart === 'groupValue') {
+				if (self.selectedGroup !== '') {
+					endpoint = endpoint.concat('&group=', self.selectedGroup)
+				}
+			}
+			else if (chart === 'deTheme') {
+				endpoint = endpoint.concat('&detheme=1')
+				canvas.data.datasets[0] = _.extend(canvas.data.datasets[0], {
+					label: 'Market Share'
 				})
+			}
+			else {
+				if (self.selectedCategory !== '') {
+					endpoint = endpoint.concat('&category=', self.selectedCategory)
+				}
 			}
 
 			$.getJSON(endpoint).then(function (response) {
